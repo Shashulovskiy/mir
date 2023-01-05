@@ -14,6 +14,7 @@ import "messagepb/messagepb.proto";
 import "isspb/isspb.proto";
 import "google/protobuf/wrappers.proto";
 import "bcbpb/bcbpb.proto";
+import "brbpb/brbpb.proto";
 import "contextstorepb/contextstorepb.proto";
 import "dslpb/dslpb.proto";
 import "mempoolpb/mempoolpb.proto";
@@ -77,6 +78,7 @@ message Event {
     checkpointpb.Event      checkpoint              = 38;
     ordererspb.SBInstanceEvent sb_event             = 39;
     NewLogFile              new_log_file            = 40;
+    brbpb.Event             brb                     = 41;
     // for unit-tests
     google.protobuf.StringValue testingString = 301;
     google.protobuf.UInt64Value testingUint   = 302;

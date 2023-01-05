@@ -10,6 +10,7 @@ package messagepb;
 
 import "isspb/isspb.proto";
 import "bcbpb/bcbpb.proto";
+import "brbpb/brbpb.proto";
 import "availabilitypb/mscpb/mscpb.proto";
 import "pingpongpb/pingpongpb.proto";
 import "checkpointpb/checkpointpb.proto";
@@ -34,5 +35,6 @@ message Message {
     pingpongpb.Message           pingpong           = 5;
     checkpointpb.Message         checkpoint         = 6;
     ordererspb.SBInstanceMessage  sb_message         = 7;
+    brbpb.Message                brb                = 8;
   }
 }
