@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/filecoin-project/mir/pkg/brbencoded"
 	"os"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/filecoin-project/mir"
-	"github.com/filecoin-project/mir/pkg/bcb"
 	mirCrypto "github.com/filecoin-project/mir/pkg/crypto"
 	"github.com/filecoin-project/mir/pkg/logging"
 	"github.com/filecoin-project/mir/pkg/modules"
@@ -85,14 +85,14 @@ func run() error {
 	}
 	transportModule.Connect(nodeAddrs)
 
-	bcbModule := bcb.NewModule(
-		&bcb.ModuleConfig{
-			Self:     "bcb",
+	brbModule, err := brbencoded.NewModule(
+		&brbencoded.ModuleConfig{
+			Self:     "brbencoded",
 			Consumer: "control",
 			Net:      "net",
 			Crypto:   "crypto",
 		},
-		&bcb.ModuleParams{
+		&brbencoded.ModuleParams{
 			InstanceUID: []byte("testing instance"),
 			AllNodes:    nodeIDs,
 			Leader:      nodeIDs[leaderNode],
@@ -100,14 +100,18 @@ func run() error {
 		args.OwnID,
 	)
 
+	if err != nil {
+		return nil
+	}
+
 	// control module reads the user input from the console and processes it.
 	control := newControlModule( /*isLeader=*/ args.OwnID == nodeIDs[leaderNode])
 
 	m := map[t.ModuleID]modules.Module{
-		"net":     transportModule,
-		"crypto":  mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
-		"bcb":     bcbModule,
-		"control": control,
+		"net":        transportModule,
+		"crypto":     mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
+		"brbencoded": brbModule,
+		"control":    control,
 	}
 
 	// create a Mir node

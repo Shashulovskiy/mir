@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/filecoin-project/mir/pkg/pb/brbencodedpb"
 	"os"
 
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
-	"github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 )
 
@@ -43,16 +43,16 @@ func (m *controlModule) ApplyEvents(ctx context.Context, events *events.EventLis
 				fmt.Println("Waiting for the message...")
 			}
 
-		case *eventpb.Event_Bcb:
-			bcbEvent := event.Type.(*eventpb.Event_Bcb).Bcb
-			switch bcbEvent.Type.(type) {
+		case *eventpb.Event_Brbencoded:
+			brbEvent := event.Type.(*eventpb.Event_Brbencoded).Brbencoded
+			switch brbEvent.Type.(type) {
 
-			case *bcbpb.Event_Deliver:
-				deliverEvent := bcbEvent.Type.(*bcbpb.Event_Deliver).Deliver
+			case *brbencodedpb.Event_Deliver:
+				deliverEvent := brbEvent.Type.(*brbencodedpb.Event_Deliver).Deliver
 				fmt.Println("Leader says: ", string(deliverEvent.Data))
 
 			default:
-				return fmt.Errorf("unknown bcb event type: %T", bcbEvent.Type)
+				return fmt.Errorf("unknown brb event type: %T", brbEvent.Type)
 			}
 
 		default:
@@ -78,11 +78,11 @@ func (m *controlModule) readMessageFromConsole() error {
 	}
 
 	m.eventsOut <- events.ListOf(&eventpb.Event{
-		DestModule: "bcb",
-		Type: &eventpb.Event_Bcb{
-			Bcb: &bcbpb.Event{
-				Type: &bcbpb.Event_Request{
-					Request: &bcbpb.BroadcastRequest{
+		DestModule: "brbencoded",
+		Type: &eventpb.Event_Brbencoded{
+			Brbencoded: &brbencodedpb.Event{
+				Type: &brbencodedpb.Event_Request{
+					Request: &brbencodedpb.BroadcastRequest{
 						Data: []byte(scanner.Text()),
 					},
 				},

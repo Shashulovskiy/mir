@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package brbencodedpb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/brbencodedpb";
+
+import "mir/codegen_extensions.proto";
+import "net/codegen_extensions.proto";
+
+// ============================================================
+// Events
+// ============================================================
+
+message Event {
+  option (mir.event_class) = true;
+
+  oneof type {
+    option (mir.event_type) = true;
+
+    BroadcastRequest request = 1;
+    Deliver          deliver = 2;
+  }
+}
+
+message BroadcastRequest {
+  option (mir.event) = true;
+
+  bytes data = 1;
+}
+
+message Deliver {
+  option (mir.event) = true;
+
+  bytes data = 1;
+}
+
+// ============================================================
+// Net Messages
+// ============================================================
+
+message Message {
+  option (net.message_class) = true;
+
+  oneof type {
+    option (net.message_type) = true;
+
+    StartMessage start_message = 1;
+    EchoMessage echo_message = 2;
+    ReadyMessage ready_message = 3;
+  }
+}
+
+message StartMessage {
+  option (net.message) = true;
+
+  bytes data = 1;
+}
+
+
+message EchoMessage {
+  option (net.message) = true;
+
+  bytes hash = 1;
+  bytes chunk = 2;
+}
+
+message ReadyMessage {
+  option (net.message) = true;
+
+  bytes hash = 1;
+  bytes chunk = 2;
+}
