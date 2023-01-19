@@ -94,11 +94,21 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.
 	state := brbModuleState{
 		request: nil,
 
-		sentEcho:  false,
-		sentReady: false,
-		delivered: false,
-		echos:     make(map[t.NodeID][]byte),
-		readys:    make(map[t.NodeID][]byte),
+		sentEcho:          false,
+		sentReady:         false,
+		delivered:         false,
+		echos:             make(map[t.NodeID][]byte),
+		echoMessagesCount: make(map[string]int),
+		echosMaxAccumulator: struct {
+			MessageContent
+			int
+		}{MessageContent: nil, int: 0},
+		readys:             make(map[t.NodeID][]byte),
+		readyMessagesCount: make(map[string]int),
+		readyMaxAccumulator: struct {
+			MessageContent
+			int
+		}{MessageContent: nil, int: 0},
 	}
 
 	// upon event <brb, Broadcast | m> do

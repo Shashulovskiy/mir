@@ -15,6 +15,8 @@ import "isspb/isspb.proto";
 import "google/protobuf/wrappers.proto";
 import "bcbpb/bcbpb.proto";
 import "brbpb/brbpb.proto";
+import "brbencodedpb/brbencodedpb.proto";
+import "brbctpb/brbctpb.proto";
 import "contextstorepb/contextstorepb.proto";
 import "dslpb/dslpb.proto";
 import "mempoolpb/mempoolpb.proto";
@@ -79,6 +81,8 @@ message Event {
     ordererspb.SBInstanceEvent sb_event             = 39;
     NewLogFile              new_log_file            = 40;
     brbpb.Event             brb                     = 41;
+    brbencodedpb.Event      brbencoded              = 42;
+    brbctpb.Event           brbct                   = 43;
     // for unit-tests
     google.protobuf.StringValue testingString = 301;
     google.protobuf.UInt64Value testingUint   = 302;

@@ -2,7 +2,6 @@ package brbencoded
 
 import (
 	"bytes"
-	"crypto/sha1"
 	"encoding/binary"
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/dsl"
@@ -23,6 +22,7 @@ type ModuleConfig struct {
 	Consumer t.ModuleID // id of the module to send the "Deliver" event to
 	Net      t.ModuleID
 	Crypto   t.ModuleID
+	Hasher   t.ModuleID
 }
 
 // DefaultModuleConfig returns a valid module config with default names for all modules.
@@ -32,6 +32,7 @@ func DefaultModuleConfig(consumer t.ModuleID) *ModuleConfig {
 		Consumer: consumer,
 		Net:      "net",
 		Crypto:   "crypto",
+		Hasher:   "hasher",
 	}
 }
 
@@ -99,7 +100,6 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	m := dsl.NewModule(mc.Self)
 
 	encoder, err := rs.New(params.GetN()-params.GetF(), params.GetF())
-	hasher := sha1.New()
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create coder")
@@ -135,39 +135,41 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			binary.LittleEndian.PutUint32(data, uint32(len(hdata)))
 			data = append(data, hdata...)
 
-			hasher.Write(hdata)
-			hash := hasher.Sum(nil)
-			hasher.Reset()
+			dsl.HashOneMessage(m, mc.Hasher, [][]byte{hdata}, &hashInitialMessageContext{data: data})
 
-			chunkSize := int(math.Ceil(float64(len(data)) / float64(params.GetN()-params.GetF())))
-			encoded := make([][]byte, params.GetN())
-			for i := range encoded {
-				encoded[i] = make([]byte, chunkSize)
-			}
-
-			for i, in := range encoded[:params.GetN()-params.GetF()] {
-				for j := range in {
-					if i*chunkSize+j < len(data) {
-						in[j] = data[i*chunkSize+j]
-					} else {
-						in[j] = 0
-					}
-				}
-			}
-
-			err := encoder.Encode(encoded)
-
-			if err != nil {
-				return err
-			}
-
-			for i, node := range params.AllNodes {
-				eventpbdsl.SendMessage(m, mc.Net, brbencpbmsgs.EchoMessage(mc.Self, hash, encoded[i]), []t.NodeID{node})
-			}
 			return nil
 		} else {
 			return fmt.Errorf("received start message not from leader or already sent echo")
 		}
+	})
+
+	dsl.UponHashResult(m, func(hashes [][]byte, context *hashInitialMessageContext) error {
+		chunkSize := int(math.Ceil(float64(len(context.data)) / float64(params.GetN()-params.GetF())))
+		encoded := make([][]byte, params.GetN())
+		for i := range encoded {
+			encoded[i] = make([]byte, chunkSize)
+		}
+
+		for i, in := range encoded[:params.GetN()-params.GetF()] {
+			for j := range in {
+				if i*chunkSize+j < len(context.data) {
+					in[j] = context.data[i*chunkSize+j]
+				} else {
+					in[j] = 0
+				}
+			}
+		}
+
+		err := encoder.Encode(encoded)
+
+		if err != nil {
+			return err
+		}
+
+		for i, node := range params.AllNodes {
+			eventpbdsl.SendMessage(m, mc.Net, brbencpbmsgs.EchoMessage(mc.Self, hashes[0], encoded[i]), []t.NodeID{node})
+		}
+		return nil
 	})
 
 	brbencpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, hash, chunk []byte) error {
@@ -220,19 +222,31 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			size := binary.LittleEndian.Uint32(output[:4])
 			output = output[4 : 4+size]
 
-			hasher.Write(output)
-			hash := hasher.Sum(nil)
-			hasher.Reset()
-
-			if bytes.Equal(hash, state.readyMaxAccumulator.hash) {
-				state.delivered = true
-				brbencpbdsl.Deliver(m, mc.Consumer, output)
-			} else {
-				panic("?")
-			}
+			dsl.HashOneMessage(m, mc.Hasher, [][]byte{output}, &hashVerificationContext{output: output})
 		}
 		return nil
 	})
 
+	dsl.UponHashResult(m, func(hashes [][]byte, context *hashVerificationContext) error {
+		if bytes.Equal(hashes[0], state.readyMaxAccumulator.hash) {
+			if !state.delivered {
+				state.delivered = true
+				brbencpbdsl.Deliver(m, mc.Consumer, context.output)
+			}
+		} else {
+			panic("?")
+		}
+
+		return nil
+	})
+
 	return m, nil
+}
+
+type hashInitialMessageContext struct {
+	data []byte
+}
+
+type hashVerificationContext struct {
+	output []byte
 }
