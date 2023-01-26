@@ -4,6 +4,9 @@ import (
 	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
 	mscpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb"
 	types1 "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
+	types4 "github.com/filecoin-project/mir/pkg/pb/brbctpb/types"
+	types3 "github.com/filecoin-project/mir/pkg/pb/brbencodedpb/types"
+	types2 "github.com/filecoin-project/mir/pkg/pb/brbpb/types"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
 	messagepb "github.com/filecoin-project/mir/pkg/pb/messagepb"
@@ -43,6 +46,12 @@ func Message_TypeFromPb(pb messagepb.Message_Type) Message_Type {
 		return &Message_Checkpoint{Checkpoint: pb.Checkpoint}
 	case *messagepb.Message_SbMessage:
 		return &Message_SbMessage{SbMessage: pb.SbMessage}
+	case *messagepb.Message_Brb:
+		return &Message_Brb{Brb: types2.MessageFromPb(pb.Brb)}
+	case *messagepb.Message_Brbencoded:
+		return &Message_Brbencoded{Brbencoded: types3.MessageFromPb(pb.Brbencoded)}
+	case *messagepb.Message_Brbct:
+		return &Message_Brbct{Brbct: types4.MessageFromPb(pb.Brbct)}
 	}
 	return nil
 }
@@ -153,6 +162,60 @@ func (w *Message_SbMessage) Pb() messagepb.Message_Type {
 
 func (*Message_SbMessage) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_SbMessage]()}
+}
+
+type Message_Brb struct {
+	Brb *types2.Message
+}
+
+func (*Message_Brb) isMessage_Type() {}
+
+func (w *Message_Brb) Unwrap() *types2.Message {
+	return w.Brb
+}
+
+func (w *Message_Brb) Pb() messagepb.Message_Type {
+	return &messagepb.Message_Brb{Brb: (w.Brb).Pb()}
+}
+
+func (*Message_Brb) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_Brb]()}
+}
+
+type Message_Brbencoded struct {
+	Brbencoded *types3.Message
+}
+
+func (*Message_Brbencoded) isMessage_Type() {}
+
+func (w *Message_Brbencoded) Unwrap() *types3.Message {
+	return w.Brbencoded
+}
+
+func (w *Message_Brbencoded) Pb() messagepb.Message_Type {
+	return &messagepb.Message_Brbencoded{Brbencoded: (w.Brbencoded).Pb()}
+}
+
+func (*Message_Brbencoded) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_Brbencoded]()}
+}
+
+type Message_Brbct struct {
+	Brbct *types4.Message
+}
+
+func (*Message_Brbct) isMessage_Type() {}
+
+func (w *Message_Brbct) Unwrap() *types4.Message {
+	return w.Brbct
+}
+
+func (w *Message_Brbct) Pb() messagepb.Message_Type {
+	return &messagepb.Message_Brbct{Brbct: (w.Brbct).Pb()}
+}
+
+func (*Message_Brbct) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_Brbct]()}
 }
 
 func MessageFromPb(pb *messagepb.Message) *Message {

@@ -8,6 +8,11 @@ message HashData {
   repeated bytes data = 1;
 }
 
+message MerklePath {
+  repeated bytes hashes = 1;
+  bytes proof = 2;
+}
+
 message StateSnapshot {
   bytes     app_data   = 1;
   EpochData epoch_data = 2;

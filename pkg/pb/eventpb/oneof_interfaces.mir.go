@@ -1,12 +1,13 @@
 package eventpb
 
 import (
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-
 	availabilitypb "github.com/filecoin-project/mir/pkg/pb/availabilitypb"
 	batchdbpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/batchdbpb"
 	batchfetcherpb "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
+	brbctpb "github.com/filecoin-project/mir/pkg/pb/brbctpb"
+	brbencodedpb "github.com/filecoin-project/mir/pkg/pb/brbencodedpb"
+	brbpb "github.com/filecoin-project/mir/pkg/pb/brbpb"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	contextstorepb "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
 	dslpb "github.com/filecoin-project/mir/pkg/pb/dslpb"
@@ -16,6 +17,7 @@ import (
 	ordererspb "github.com/filecoin-project/mir/pkg/pb/ordererspb"
 	pingpongpb "github.com/filecoin-project/mir/pkg/pb/pingpongpb"
 	threshcryptopb "github.com/filecoin-project/mir/pkg/pb/threshcryptopb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type Event_Type = isEvent_Type
@@ -179,6 +181,50 @@ func (w *Event_SbEvent) Unwrap() *ordererspb.SBInstanceEvent {
 
 func (w *Event_NewLogFile) Unwrap() *NewLogFile {
 	return w.NewLogFile
+}
+
+func (w *Event_Brb) Unwrap() *brbpb.Event {
+	return w.Brb
+}
+
+func (w *Event_Brbencoded) Unwrap() *brbencodedpb.Event {
+	return w.Brbencoded
+}
+
+func (w *Event_Brbct) Unwrap() *brbctpb.Event {
+	return w.Brbct
+}
+
+func (w *Event_MerkelBuildRequest) Unwrap() *MerkleBuildRequest {
+	return w.MerkelBuildRequest
+}
+
+func (w *Event_MerkelBuildResult) Unwrap() *MerkleBuildResult {
+	return w.MerkelBuildResult
+}
+
+func (w *Event_MerkelVerifyRequest) Unwrap() *MerkleVerifyRequest {
+	return w.MerkelVerifyRequest
+}
+
+func (w *Event_MerkelVerifyResult) Unwrap() *MerkleVerifyResult {
+	return w.MerkelVerifyResult
+}
+
+func (w *Event_DataEncodeRequest) Unwrap() *DataEncodeRequest {
+	return w.DataEncodeRequest
+}
+
+func (w *Event_DataEncodeResult) Unwrap() *DataEncodeResult {
+	return w.DataEncodeResult
+}
+
+func (w *Event_DataDecodeRequest) Unwrap() *DataDecodeRequest {
+	return w.DataDecodeRequest
+}
+
+func (w *Event_DataDecodeResult) Unwrap() *DataDecodeResult {
+	return w.DataDecodeResult
 }
 
 func (w *Event_TestingString) Unwrap() *wrapperspb.StringValue {

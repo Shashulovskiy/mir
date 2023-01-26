@@ -150,6 +150,27 @@ func HashRequest(destModule t.ModuleID, data [][][]byte, origin *eventpb.HashOri
 	}
 }
 
+func MerkleProofVerifyRequest(destModule t.ModuleID, rootHash []byte, proof *commonpb.MerklePath, origin *eventpb.MerkleProofVerifyOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_MerkelVerifyRequest{MerkelVerifyRequest: &eventpb.MerkleVerifyRequest{
+			RootHash: rootHash,
+			Proof:    proof,
+			Origin:   origin,
+		}},
+	}
+}
+
+func MerkleBuildRequest(destModule t.ModuleID, messages [][]byte, origin *eventpb.MerkleBuildOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_MerkelBuildRequest{MerkelBuildRequest: &eventpb.MerkleBuildRequest{
+			Messages: messages,
+			Origin:   origin,
+		}},
+	}
+}
+
 // HashResult returns an event representing the computation of hashes by the hashing module.
 // It contains the computed digests and the HashOrigin,
 // an object used to maintain the context for the requesting module,
@@ -159,6 +180,29 @@ func HashResult(destModule t.ModuleID, digests [][]byte, origin *eventpb.HashOri
 		Digests: digests,
 		Origin:  origin,
 	}}}
+}
+
+func MerkelProofVerifyResult(destModule t.ModuleID, result bool, origin *eventpb.MerkleProofVerifyOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_MerkelVerifyResult{MerkelVerifyResult: &eventpb.MerkleVerifyResult{
+			Result: result,
+			Origin: origin,
+		}},
+	}
+}
+
+func MerkleBuildResult(destModule t.ModuleID, rootHash []byte, proofs []*commonpb.MerklePath, origin *eventpb.MerkleBuildOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_MerkelBuildResult{
+			MerkelBuildResult: &eventpb.MerkleBuildResult{
+				RootHash: rootHash,
+				Proofs:   proofs,
+				Origin:   origin,
+			},
+		},
+	}
 }
 
 // SignRequest returns an event representing a request to the crypto module for computing the signature over data.

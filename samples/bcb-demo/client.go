@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto"
 	"fmt"
-	"github.com/filecoin-project/mir/pkg/brbencoded"
+	"github.com/filecoin-project/mir/pkg/brbhash"
+	"github.com/filecoin-project/mir/pkg/merkletree"
 	"os"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -85,14 +87,18 @@ func run() error {
 	}
 	transportModule.Connect(nodeAddrs)
 
-	brbModule, err := brbencoded.NewModule(
-		&brbencoded.ModuleConfig{
-			Self:     "brbencoded",
-			Consumer: "control",
-			Net:      "net",
-			Crypto:   "crypto",
+	merkle := merkletree.NewVerifier()
+
+	brbModule, err := brbhash.NewModule(
+		&brbhash.ModuleConfig{
+			Self:                "brbhash",
+			Consumer:            "control",
+			Net:                 "net",
+			Crypto:              "crypto",
+			Hasher:              "hasher",
+			MerkleProofVerifier: "merkle",
 		},
-		&brbencoded.ModuleParams{
+		&brbhash.ModuleParams{
 			InstanceUID: []byte("testing instance"),
 			AllNodes:    nodeIDs,
 			Leader:      nodeIDs[leaderNode],
@@ -106,12 +112,15 @@ func run() error {
 
 	// control module reads the user input from the console and processes it.
 	control := newControlModule( /*isLeader=*/ args.OwnID == nodeIDs[leaderNode])
+	hasher := mirCrypto.NewHasher(crypto.SHA1)
 
 	m := map[t.ModuleID]modules.Module{
-		"net":        transportModule,
-		"crypto":     mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
-		"brbencoded": brbModule,
-		"control":    control,
+		"net":     transportModule,
+		"crypto":  mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
+		"brbhash": brbModule,
+		"control": control,
+		"hasher":  hasher,
+		"merkle":  merkle,
 	}
 
 	// create a Mir node

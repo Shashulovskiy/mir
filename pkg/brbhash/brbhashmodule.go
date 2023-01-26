@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/mir/pkg/modules"
 	brbpbdsl "github.com/filecoin-project/mir/pkg/pb/brbctpb/dsl"
 	brbmsgs "github.com/filecoin-project/mir/pkg/pb/brbctpb/msgs"
+	"github.com/filecoin-project/mir/pkg/pb/commonpb"
 	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
 	t "github.com/filecoin-project/mir/pkg/types"
 	rs "github.com/klauspost/reedsolomon"
@@ -18,21 +19,23 @@ import (
 
 // ModuleConfig sets the module ids. All replicas are expected to use identical module configurations.
 type ModuleConfig struct {
-	Self     t.ModuleID // id of this module
-	Consumer t.ModuleID // id of the module to send the "Deliver" event to
-	Net      t.ModuleID
-	Crypto   t.ModuleID
-	Hasher   t.ModuleID
+	Self                t.ModuleID // id of this module
+	Consumer            t.ModuleID // id of the module to send the "Deliver" event to
+	Net                 t.ModuleID
+	Crypto              t.ModuleID
+	Hasher              t.ModuleID
+	MerkleProofVerifier t.ModuleID
 }
 
 // DefaultModuleConfig returns a valid module config with default names for all modules.
 func DefaultModuleConfig(consumer t.ModuleID) *ModuleConfig {
 	return &ModuleConfig{
-		Self:     "brbhash",
-		Consumer: consumer,
-		Net:      "net",
-		Crypto:   "crypto",
-		Hasher:   "hasher",
+		Self:                "brbhash",
+		Consumer:            consumer,
+		Net:                 "net",
+		Crypto:              "crypto",
+		Hasher:              "hasher",
+		MerkleProofVerifier: "merkleverify",
 	}
 }
 
@@ -55,7 +58,7 @@ func (params *ModuleParams) GetF() int {
 }
 
 type Accumulator = struct {
-	value []byte
+	value string
 	count int
 }
 
@@ -68,18 +71,18 @@ type brbHashModuleState struct {
 	sentReady bool
 	delivered bool
 
-	echos              [][]byte
-	echoMessagesCount  int
-	readyMessagesCount int
-	startReceived      bool
-	echoReceived       []bool
-	readyReceived      []bool
+	echos                    map[string][][]byte
+	echoMessagesCount        map[string]int
+	echoMessagesAccumulator  Accumulator
+	readyMessagesReceived    map[string][]bool
+	readyMessagesCount       map[string]int
+	readyMessagesAccumulator Accumulator
 }
 
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 	m := dsl.NewModule(mc.Self)
 
-	encoder, err := rs.New(params.GetN()-params.GetF(), params.GetF())
+	encoder, err := rs.New(params.GetN()-2*params.GetF(), 2*params.GetF())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create coder")
@@ -89,15 +92,15 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	state := brbHashModuleState{
 		proposed: nil,
 
-		sentEcho:           false,
-		sentReady:          false,
-		delivered:          false,
-		startReceived:      false,
-		echos:              make([][]byte, params.GetN()),
-		echoMessagesCount:  0,
-		echoReceived:       make([]bool, params.GetN()),
-		readyMessagesCount: 0,
-		readyReceived:      make([]bool, params.GetN()),
+		sentEcho:                 false,
+		sentReady:                false,
+		delivered:                false,
+		echos:                    make(map[string][][]byte),
+		echoMessagesCount:        make(map[string]int),
+		echoMessagesAccumulator:  Accumulator{value: "", count: -1},
+		readyMessagesCount:       make(map[string]int),
+		readyMessagesReceived:    make(map[string][]bool),
+		readyMessagesAccumulator: Accumulator{value: "", count: -1},
 	}
 
 	// upon event <brb, Broadcast | m> do
@@ -110,13 +113,13 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		binary.LittleEndian.PutUint32(data, uint32(len(hdata)))
 		data = append(data, hdata...)
 
-		chunkSize := int(math.Ceil(float64(len(data)) / float64(params.GetN()-params.GetF())))
+		chunkSize := int(math.Ceil(float64(len(data)) / float64(params.GetN()-2*params.GetF())))
 		encoded := make([][]byte, params.GetN())
 		for i := range encoded {
 			encoded[i] = make([]byte, chunkSize)
 		}
 
-		for i, in := range encoded[:params.GetN()-params.GetF()] {
+		for i, in := range encoded[:params.GetN()-2*params.GetF()] {
 			for j := range in {
 				if i*chunkSize+j < len(data) {
 					in[j] = data[i*chunkSize+j]
@@ -131,26 +134,22 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			return err
 		}
 
-		toHash := make([][][]byte, params.GetN())
-		for i := 0; i < params.GetN(); i++ {
-			toHash[i] = [][]byte{encoded[i]}
-		}
-
-		dsl.HashRequest(m, mc.Hasher, toHash, &hashInitialMessageContext{data: encoded})
+		dsl.MerkleBuildRequest(m, mc.MerkleProofVerifier, encoded, &hashInitialMessageContext{data: encoded})
 
 		return nil
 	})
 
-	dsl.UponHashResult(m, func(hashes [][]byte, context *hashInitialMessageContext) error {
+	dsl.MerkleBuildResult(m, func(rootHash []byte, proofs []*commonpb.MerklePath, context *hashInitialMessageContext) error {
 		for i, node := range params.AllNodes {
-			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.StartMessage(mc.Self, context.data[i], hashes), []t.NodeID{node})
+			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.StartMessage(mc.Self, context.data[i], rootHash, proofs[i]), []t.NodeID{node})
 		}
 		return nil
 	})
 
-	brbpbdsl.UponStartMessageReceived(m, func(from t.NodeID, chunk []uint8, hashes [][]uint8) error {
-		if from == params.Leader && !state.startReceived {
-			dsl.HashOneMessage(m, mc.Hasher, [][]byte{chunk}, &hashStartMessageContext{chunk: chunk, hashes: hashes})
+	// -----------
+	brbpbdsl.UponStartMessageReceived(m, func(from t.NodeID, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
+		if from == params.Leader && !state.sentEcho {
+			dsl.MerkleProofVerifyRequest(m, mc.MerkleProofVerifier, rootHash, proof, &hashStartMessageContext{chunk: chunk, rootHash: rootHash, proof: proof})
 
 			return nil
 		} else {
@@ -158,17 +157,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 	})
 
-	dsl.UponHashResult(m, func(hashes [][]byte, context *hashStartMessageContext) error {
-		thisId, err := strconv.ParseInt(nodeID.Pb(), 10, 64)
-		if err != nil {
-			return err
-		}
-		if bytes.Equal(hashes[0], context.hashes[thisId]) && !state.startReceived {
-			state.startReceived = true
+	dsl.MerkleProofVerifyResult(m, func(result bool, context *hashStartMessageContext) error {
+		if result && !state.sentEcho {
+			state.sentEcho = true
 
-			for _, node := range params.AllNodes {
-				eventpbdsl.SendMessage(m, mc.Net, brbmsgs.EchoMessage(mc.Self, context.chunk, context.hashes), []t.NodeID{node})
-			}
+			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.EchoMessage(mc.Self, context.chunk, context.rootHash, context.proof), params.AllNodes)
 
 			return nil
 		} else {
@@ -176,145 +169,85 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 	})
 
-	brbpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, chunk []uint8, hashes [][]uint8) error {
+	brbpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
 		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
 			return err
 		}
 
-		if state.echoReceived[fromId] == false {
-			dsl.HashOneMessage(m, mc.Hasher, [][]byte{chunk}, &hashEchoMessageContext{fromId: fromId, chunk: chunk, hashes: hashes})
-
-			return nil
-		} else {
-			return fmt.Errorf("received duplicate echo")
-		}
+		dsl.MerkleProofVerifyRequest(m, mc.MerkleProofVerifier, rootHash, proof, &hashEchoMessageContext{fromId: fromId, chunk: chunk, rootHash: rootHash, proof: proof})
+		return nil
 	})
 
-	dsl.UponHashResult(m, func(hashes [][]byte, context *hashEchoMessageContext) error {
-		if bytes.Equal(hashes[0], context.hashes[context.fromId]) {
-			state.echos[context.fromId] = context.chunk
-			state.echoReceived[context.fromId] = true
-			state.echoMessagesCount += 1
-
-			if state.echoMessagesCount == int(math.Max(math.Ceil(float64((params.GetN()+params.GetF()+1)/2)), float64(params.GetN()-2*params.GetF()))) && state.readyMessagesCount < params.GetN()-2*params.GetF() {
-				decoded := make([][]byte, params.GetN())
-				for i := 0; i < params.GetN(); i++ {
-					decoded[i] = state.echos[i]
-				}
-
-				err := encoder.Reconstruct(decoded)
-				if err != nil {
-					return err
-				}
-
-				toHash := make([][][]byte, params.GetN())
-				for i := 0; i < params.GetN(); i++ {
-					toHash[i] = [][]byte{decoded[i]}
-				}
-
-				dsl.HashRequest(m, mc.Hasher, toHash, &hashEchoResultContext{decoded: decoded, hashes: context.hashes})
-			}
+	dsl.MerkleProofVerifyResult(m, func(result bool, context *hashEchoMessageContext) error {
+		if result {
+			updateAccumulator(
+				&state.echos,
+				&state.echoMessagesCount,
+				&state.echoMessagesAccumulator,
+				string(context.rootHash),
+				context.chunk,
+				context.fromId,
+				params,
+			)
 			return nil
 		} else {
 			return fmt.Errorf("received invalid echo")
 		}
 	})
 
-	dsl.UponHashResult(m, func(hashes [][]byte, context *hashEchoResultContext) error {
-		thisId, err := strconv.ParseInt(nodeID.Pb(), 10, 64)
+	brbpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, rootHash []byte) error {
+		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
 			return err
 		}
 
-		for i := 0; i < params.GetN(); i++ {
-			if !bytes.Equal(hashes[i], context.hashes[i]) {
-				return errors.New("invalid hash receive with echo")
-			}
-		}
+		stringRepl := string(rootHash)
 
-		for _, node := range params.AllNodes {
-			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, context.decoded[thisId], context.hashes), []t.NodeID{node})
+		if _, ok := state.readyMessagesReceived[stringRepl]; !ok {
+			state.readyMessagesReceived[stringRepl] = make([]bool, params.GetN())
+		}
+		if !state.readyMessagesReceived[stringRepl][fromId] {
+			state.readyMessagesReceived[stringRepl][fromId] = true
+
+			state.readyMessagesCount[stringRepl]++
+			if state.readyMessagesCount[stringRepl] > state.readyMessagesAccumulator.count {
+				state.readyMessagesAccumulator.count = state.readyMessagesCount[stringRepl]
+				state.readyMessagesAccumulator.value = stringRepl
+			}
 		}
 
 		return nil
 	})
 
-	brbpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, chunk []uint8, hashes [][]uint8) error {
-		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
-		if err != nil {
-			return err
+	dsl.UponCondition(m, func() error {
+		if (state.echoMessagesAccumulator.count >= params.GetN()-params.GetF()) && !state.sentReady {
+			state.sentReady = true
+			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, []byte(state.echoMessagesAccumulator.value)), params.AllNodes)
 		}
 
-		if state.readyReceived[fromId] == false {
-			dsl.HashOneMessage(m, mc.Hasher, [][]byte{chunk}, &hashReadyMessageContext{fromId: fromId, chunk: chunk, hashes: hashes})
-
-			return nil
-		} else {
-			return fmt.Errorf("received duplicate echo")
+		if (state.readyMessagesAccumulator.count >= params.GetN()-2*params.GetF()) && !state.sentReady {
+			state.sentReady = true
+			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, []byte(state.readyMessagesAccumulator.value)), params.AllNodes)
 		}
-	})
 
-	dsl.UponHashResult(m, func(hashes [][]byte, context *hashReadyMessageContext) error {
-		if bytes.Equal(hashes[0], context.hashes[context.fromId]) {
-			state.echos[context.fromId] = context.chunk
-			state.readyReceived[context.fromId] = true
-			state.readyMessagesCount += 1
-
-			if state.echoMessagesCount < int(math.Max(math.Ceil(float64((params.GetN()+params.GetF()+1)/2)), float64(params.GetN()-2*params.GetF()))) && state.readyMessagesCount == params.GetN()-2*params.GetF() {
-				decoded := make([][]byte, params.GetN())
-				for i := 0; i < params.GetN(); i++ {
-					decoded[i] = state.echos[i]
-				}
-
-				err := encoder.Reconstruct(decoded)
-				if err != nil {
-					return err
-				}
-
-				toHash := make([][][]byte, params.GetN())
-				for i := 0; i < params.GetN(); i++ {
-					toHash[i] = [][]byte{decoded[i]}
-				}
-
-				dsl.HashRequest(m, mc.Hasher, toHash, &hashReadyResultContext{decoded: decoded, hashes: context.hashes})
-			} else if state.readyMessagesCount == params.GetN()-params.GetF() {
-				decoded := make([][]byte, params.GetN())
-				for i := 0; i < params.GetN(); i++ {
-					decoded[i] = state.echos[i]
-				}
-
-				err := encoder.Reconstruct(decoded)
-				if err != nil {
-					return err
-				}
-
-				output := bytes.Join(decoded, []byte{})
-
-				size := binary.LittleEndian.Uint32(output[:4])
-				output = output[4 : 4+size]
-				brbpbdsl.Deliver(m, mc.Consumer, output)
+		if state.readyMessagesAccumulator.count >= params.GetN()-params.GetF() && state.echoMessagesAccumulator.count > params.GetN()-2*params.GetF() && !state.delivered {
+			state.delivered = true
+			decoded := make([][]byte, params.GetN())
+			for i := 0; i < params.GetN(); i++ {
+				decoded[i] = state.echos[state.echoMessagesAccumulator.value][i]
 			}
-			return nil
-		} else {
-			return fmt.Errorf("received invalid echo")
-		}
-	})
 
-	dsl.UponHashResult(m, func(hashes [][]byte, context *hashReadyResultContext) error {
-		thisId, err := strconv.ParseInt(nodeID.Pb(), 10, 64)
-		if err != nil {
-			return err
-		}
-
-		for i := 0; i < params.GetN(); i++ {
-			if !bytes.Equal(hashes[i], context.hashes[i]) {
-				return errors.New("invalid hash receive with ready")
+			err := encoder.Reconstruct(decoded)
+			if err != nil {
+				return err
 			}
-		}
 
-		for _, node := range params.AllNodes {
-			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, context.decoded[thisId], context.hashes), []t.NodeID{node})
+			output := bytes.Join(decoded, []byte{})
+
+			size := binary.LittleEndian.Uint32(output[:4])
+			output = output[4 : 4+size]
+			brbpbdsl.Deliver(m, mc.Consumer, output)
 		}
 
 		return nil
@@ -323,30 +256,44 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	return m, nil
 }
 
+func updateAccumulator(values *map[string][][]byte, counter *map[string]int, accumulator *Accumulator, hash string, chunk []byte, id int64, params *ModuleParams) {
+	if _, ok := (*values)[hash]; !ok {
+		(*values)[hash] = make([][]byte, params.GetN())
+	}
+	if (*values)[hash][id] == nil {
+		(*values)[hash][id] = chunk
+		(*counter)[hash]++
+		if (*counter)[hash] > accumulator.count {
+			(*accumulator).count = (*counter)[hash]
+			(*accumulator).value = hash
+		}
+	}
+}
+
 type hashInitialMessageContext struct {
 	data [][]byte
 }
 
 type hashStartMessageContext struct {
-	chunk  []byte
-	hashes [][]byte
+	chunk    []byte
+	rootHash []byte
+	proof    *commonpb.MerklePath
 }
 
 type hashEchoMessageContext struct {
-	fromId int64
-	chunk  []byte
-	hashes [][]byte
+	fromId   int64
+	chunk    []byte
+	rootHash []byte
+	proof    *commonpb.MerklePath
 }
 
 type hashReadyMessageContext struct {
 	fromId int64
 	chunk  []byte
-	hashes [][]byte
 }
 
 type hashEchoResultContext struct {
 	decoded [][]byte
-	hashes  [][]byte
 }
 
 type hashReadyResultContext struct {

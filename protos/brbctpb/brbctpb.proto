@@ -7,6 +7,8 @@ option go_package = "github.com/filecoin-project/mir/pkg/pb/brbctpb";
 import "mir/codegen_extensions.proto";
 import "net/codegen_extensions.proto";
 
+import "commonpb/commonpb.proto";
+
 // ============================================================
 // Events
 // ============================================================
@@ -54,7 +56,8 @@ message StartMessage {
   option (net.message) = true;
 
   bytes chunk = 1;
-  repeated bytes hashes = 2;
+  bytes root_hash = 2;
+  commonpb.MerklePath proof = 3;
 }
 
 
@@ -62,12 +65,12 @@ message EchoMessage {
   option (net.message) = true;
 
   bytes chunk = 1;
-  repeated bytes hashes = 2;
+  bytes root_hash = 2;
+  commonpb.MerklePath proof = 3;
 }
 
 message ReadyMessage {
   option (net.message) = true;
 
-  bytes chunk = 1;
-  repeated bytes hashes = 2;
+  bytes root_hash = 1;
 }
