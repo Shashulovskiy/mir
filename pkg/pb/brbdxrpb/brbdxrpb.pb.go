@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.28.1
 // 	protoc        v3.21.4
-// source: brbencodedpb/brbencodedpb.proto
+// source: brbdxrpb/brbdxrpb.proto
 
-package brbencodedpb
+package brbdxrpb
 
 import (
 	_ "github.com/filecoin-project/mir/pkg/pb/mir"
@@ -36,7 +36,7 @@ type Event struct {
 func (x *Event) Reset() {
 	*x = Event{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[0]
+		mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -49,7 +49,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[0]
+	mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +62,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_brbencodedpb_brbencodedpb_proto_rawDescGZIP(), []int{0}
+	return file_brbdxrpb_brbdxrpb_proto_rawDescGZIP(), []int{0}
 }
 
 func (m *Event) GetType() isEvent_Type {
@@ -113,7 +113,7 @@ type BroadcastRequest struct {
 func (x *BroadcastRequest) Reset() {
 	*x = BroadcastRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[1]
+		mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -126,7 +126,7 @@ func (x *BroadcastRequest) String() string {
 func (*BroadcastRequest) ProtoMessage() {}
 
 func (x *BroadcastRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[1]
+	mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -139,7 +139,7 @@ func (x *BroadcastRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BroadcastRequest.ProtoReflect.Descriptor instead.
 func (*BroadcastRequest) Descriptor() ([]byte, []int) {
-	return file_brbencodedpb_brbencodedpb_proto_rawDescGZIP(), []int{1}
+	return file_brbdxrpb_brbdxrpb_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *BroadcastRequest) GetData() []byte {
@@ -160,7 +160,7 @@ type Deliver struct {
 func (x *Deliver) Reset() {
 	*x = Deliver{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[2]
+		mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -173,7 +173,7 @@ func (x *Deliver) String() string {
 func (*Deliver) ProtoMessage() {}
 
 func (x *Deliver) ProtoReflect() protoreflect.Message {
-	mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[2]
+	mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -186,7 +186,7 @@ func (x *Deliver) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Deliver.ProtoReflect.Descriptor instead.
 func (*Deliver) Descriptor() ([]byte, []int) {
-	return file_brbencodedpb_brbencodedpb_proto_rawDescGZIP(), []int{2}
+	return file_brbdxrpb_brbdxrpb_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Deliver) GetData() []byte {
@@ -211,7 +211,7 @@ type Message struct {
 func (x *Message) Reset() {
 	*x = Message{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[3]
+		mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -224,7 +224,7 @@ func (x *Message) String() string {
 func (*Message) ProtoMessage() {}
 
 func (x *Message) ProtoReflect() protoreflect.Message {
-	mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[3]
+	mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -237,7 +237,7 @@ func (x *Message) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Message.ProtoReflect.Descriptor instead.
 func (*Message) Descriptor() ([]byte, []int) {
-	return file_brbencodedpb_brbencodedpb_proto_rawDescGZIP(), []int{3}
+	return file_brbdxrpb_brbdxrpb_proto_rawDescGZIP(), []int{3}
 }
 
 func (m *Message) GetType() isMessage_Type {
@@ -301,7 +301,7 @@ type StartMessage struct {
 func (x *StartMessage) Reset() {
 	*x = StartMessage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[4]
+		mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -314,7 +314,7 @@ func (x *StartMessage) String() string {
 func (*StartMessage) ProtoMessage() {}
 
 func (x *StartMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[4]
+	mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -327,7 +327,7 @@ func (x *StartMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartMessage.ProtoReflect.Descriptor instead.
 func (*StartMessage) Descriptor() ([]byte, []int) {
-	return file_brbencodedpb_brbencodedpb_proto_rawDescGZIP(), []int{4}
+	return file_brbdxrpb_brbdxrpb_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *StartMessage) GetData() []byte {
@@ -349,7 +349,7 @@ type EchoMessage struct {
 func (x *EchoMessage) Reset() {
 	*x = EchoMessage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[5]
+		mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -362,7 +362,7 @@ func (x *EchoMessage) String() string {
 func (*EchoMessage) ProtoMessage() {}
 
 func (x *EchoMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[5]
+	mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -375,7 +375,7 @@ func (x *EchoMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EchoMessage.ProtoReflect.Descriptor instead.
 func (*EchoMessage) Descriptor() ([]byte, []int) {
-	return file_brbencodedpb_brbencodedpb_proto_rawDescGZIP(), []int{5}
+	return file_brbdxrpb_brbdxrpb_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *EchoMessage) GetHash() []byte {
@@ -404,7 +404,7 @@ type ReadyMessage struct {
 func (x *ReadyMessage) Reset() {
 	*x = ReadyMessage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[6]
+		mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -417,7 +417,7 @@ func (x *ReadyMessage) String() string {
 func (*ReadyMessage) ProtoMessage() {}
 
 func (x *ReadyMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_brbencodedpb_brbencodedpb_proto_msgTypes[6]
+	mi := &file_brbdxrpb_brbdxrpb_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -430,7 +430,7 @@ func (x *ReadyMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReadyMessage.ProtoReflect.Descriptor instead.
 func (*ReadyMessage) Descriptor() ([]byte, []int) {
-	return file_brbencodedpb_brbencodedpb_proto_rawDescGZIP(), []int{6}
+	return file_brbdxrpb_brbdxrpb_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ReadyMessage) GetHash() []byte {
@@ -447,9 +447,9 @@ func (x *ReadyMessage) GetChunk() []byte {
 	return nil
 }
 
-var File_brbencodedpb_brbencodedpb_proto protoreflect.FileDescriptor
+var File_brbdxrpb_brbdxrpb_proto protoreflect.FileDescriptor
 
-var file_brbencodedpb_brbencodedpb_proto_rawDesc = []byte{
+var file_brbdxrpb_brbdxrpb_proto_rawDesc = []byte{
 	0x0a, 0x1f, 0x62, 0x72, 0x62, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x70, 0x62, 0x2f, 0x62,
 	0x72, 0x62, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x70, 0x62, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x12, 0x0c, 0x62, 0x72, 0x62, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x70, 0x62, 0x1a,
@@ -503,33 +503,33 @@ var file_brbencodedpb_brbencodedpb_proto_rawDesc = []byte{
 }
 
 var (
-	file_brbencodedpb_brbencodedpb_proto_rawDescOnce sync.Once
-	file_brbencodedpb_brbencodedpb_proto_rawDescData = file_brbencodedpb_brbencodedpb_proto_rawDesc
+	file_brbdxrpb_brbdxrpb_proto_rawDescOnce sync.Once
+	file_brbdxrpb_brbdxrpb_proto_rawDescData = file_brbdxrpb_brbdxrpb_proto_rawDesc
 )
 
-func file_brbencodedpb_brbencodedpb_proto_rawDescGZIP() []byte {
-	file_brbencodedpb_brbencodedpb_proto_rawDescOnce.Do(func() {
-		file_brbencodedpb_brbencodedpb_proto_rawDescData = protoimpl.X.CompressGZIP(file_brbencodedpb_brbencodedpb_proto_rawDescData)
+func file_brbdxrpb_brbdxrpb_proto_rawDescGZIP() []byte {
+	file_brbdxrpb_brbdxrpb_proto_rawDescOnce.Do(func() {
+		file_brbdxrpb_brbdxrpb_proto_rawDescData = protoimpl.X.CompressGZIP(file_brbdxrpb_brbdxrpb_proto_rawDescData)
 	})
-	return file_brbencodedpb_brbencodedpb_proto_rawDescData
+	return file_brbdxrpb_brbdxrpb_proto_rawDescData
 }
 
-var file_brbencodedpb_brbencodedpb_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
-var file_brbencodedpb_brbencodedpb_proto_goTypes = []interface{}{
-	(*Event)(nil),            // 0: brbencodedpb.Event
-	(*BroadcastRequest)(nil), // 1: brbencodedpb.BroadcastRequest
-	(*Deliver)(nil),          // 2: brbencodedpb.Deliver
-	(*Message)(nil),          // 3: brbencodedpb.Message
-	(*StartMessage)(nil),     // 4: brbencodedpb.StartMessage
-	(*EchoMessage)(nil),      // 5: brbencodedpb.EchoMessage
-	(*ReadyMessage)(nil),     // 6: brbencodedpb.ReadyMessage
+var file_brbdxrpb_brbdxrpb_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_brbdxrpb_brbdxrpb_proto_goTypes = []interface{}{
+	(*Event)(nil),            // 0: brbdxrpb.Event
+	(*BroadcastRequest)(nil), // 1: brbdxrpb.BroadcastRequest
+	(*Deliver)(nil),          // 2: brbdxrpb.Deliver
+	(*Message)(nil),          // 3: brbdxrpb.Message
+	(*StartMessage)(nil),     // 4: brbdxrpb.StartMessage
+	(*EchoMessage)(nil),      // 5: brbdxrpb.EchoMessage
+	(*ReadyMessage)(nil),     // 6: brbdxrpb.ReadyMessage
 }
-var file_brbencodedpb_brbencodedpb_proto_depIdxs = []int32{
-	1, // 0: brbencodedpb.Event.request:type_name -> brbencodedpb.BroadcastRequest
-	2, // 1: brbencodedpb.Event.deliver:type_name -> brbencodedpb.Deliver
-	4, // 2: brbencodedpb.Message.start_message:type_name -> brbencodedpb.StartMessage
-	5, // 3: brbencodedpb.Message.echo_message:type_name -> brbencodedpb.EchoMessage
-	6, // 4: brbencodedpb.Message.ready_message:type_name -> brbencodedpb.ReadyMessage
+var file_brbdxrpb_brbdxrpb_proto_depIdxs = []int32{
+	1, // 0: brbdxrpb.Event.request:type_name -> brbdxrpb.BroadcastRequest
+	2, // 1: brbdxrpb.Event.deliver:type_name -> brbdxrpb.Deliver
+	4, // 2: brbdxrpb.Message.start_message:type_name -> brbdxrpb.StartMessage
+	5, // 3: brbdxrpb.Message.echo_message:type_name -> brbdxrpb.EchoMessage
+	6, // 4: brbdxrpb.Message.ready_message:type_name -> brbdxrpb.ReadyMessage
 	5, // [5:5] is the sub-list for method output_type
 	5, // [5:5] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name
@@ -537,13 +537,13 @@ var file_brbencodedpb_brbencodedpb_proto_depIdxs = []int32{
 	0, // [0:5] is the sub-list for field type_name
 }
 
-func init() { file_brbencodedpb_brbencodedpb_proto_init() }
-func file_brbencodedpb_brbencodedpb_proto_init() {
-	if File_brbencodedpb_brbencodedpb_proto != nil {
+func init() { file_brbdxrpb_brbdxrpb_proto_init() }
+func file_brbdxrpb_brbdxrpb_proto_init() {
+	if File_brbdxrpb_brbdxrpb_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_brbencodedpb_brbencodedpb_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_brbdxrpb_brbdxrpb_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Event); i {
 			case 0:
 				return &v.state
@@ -555,7 +555,7 @@ func file_brbencodedpb_brbencodedpb_proto_init() {
 				return nil
 			}
 		}
-		file_brbencodedpb_brbencodedpb_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_brbdxrpb_brbdxrpb_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BroadcastRequest); i {
 			case 0:
 				return &v.state
@@ -567,7 +567,7 @@ func file_brbencodedpb_brbencodedpb_proto_init() {
 				return nil
 			}
 		}
-		file_brbencodedpb_brbencodedpb_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_brbdxrpb_brbdxrpb_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Deliver); i {
 			case 0:
 				return &v.state
@@ -579,7 +579,7 @@ func file_brbencodedpb_brbencodedpb_proto_init() {
 				return nil
 			}
 		}
-		file_brbencodedpb_brbencodedpb_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_brbdxrpb_brbdxrpb_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Message); i {
 			case 0:
 				return &v.state
@@ -591,7 +591,7 @@ func file_brbencodedpb_brbencodedpb_proto_init() {
 				return nil
 			}
 		}
-		file_brbencodedpb_brbencodedpb_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_brbdxrpb_brbdxrpb_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*StartMessage); i {
 			case 0:
 				return &v.state
@@ -603,7 +603,7 @@ func file_brbencodedpb_brbencodedpb_proto_init() {
 				return nil
 			}
 		}
-		file_brbencodedpb_brbencodedpb_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_brbdxrpb_brbdxrpb_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*EchoMessage); i {
 			case 0:
 				return &v.state
@@ -615,7 +615,7 @@ func file_brbencodedpb_brbencodedpb_proto_init() {
 				return nil
 			}
 		}
-		file_brbencodedpb_brbencodedpb_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_brbdxrpb_brbdxrpb_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ReadyMessage); i {
 			case 0:
 				return &v.state
@@ -628,11 +628,11 @@ func file_brbencodedpb_brbencodedpb_proto_init() {
 			}
 		}
 	}
-	file_brbencodedpb_brbencodedpb_proto_msgTypes[0].OneofWrappers = []interface{}{
+	file_brbdxrpb_brbdxrpb_proto_msgTypes[0].OneofWrappers = []interface{}{
 		(*Event_Request)(nil),
 		(*Event_Deliver)(nil),
 	}
-	file_brbencodedpb_brbencodedpb_proto_msgTypes[3].OneofWrappers = []interface{}{
+	file_brbdxrpb_brbdxrpb_proto_msgTypes[3].OneofWrappers = []interface{}{
 		(*Message_StartMessage)(nil),
 		(*Message_EchoMessage)(nil),
 		(*Message_ReadyMessage)(nil),
@@ -641,18 +641,18 @@ func file_brbencodedpb_brbencodedpb_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_brbencodedpb_brbencodedpb_proto_rawDesc,
+			RawDescriptor: file_brbdxrpb_brbdxrpb_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_brbencodedpb_brbencodedpb_proto_goTypes,
-		DependencyIndexes: file_brbencodedpb_brbencodedpb_proto_depIdxs,
-		MessageInfos:      file_brbencodedpb_brbencodedpb_proto_msgTypes,
+		GoTypes:           file_brbdxrpb_brbdxrpb_proto_goTypes,
+		DependencyIndexes: file_brbdxrpb_brbdxrpb_proto_depIdxs,
+		MessageInfos:      file_brbdxrpb_brbdxrpb_proto_msgTypes,
 	}.Build()
-	File_brbencodedpb_brbencodedpb_proto = out.File
-	file_brbencodedpb_brbencodedpb_proto_rawDesc = nil
-	file_brbencodedpb_brbencodedpb_proto_goTypes = nil
-	file_brbencodedpb_brbencodedpb_proto_depIdxs = nil
+	File_brbdxrpb_brbdxrpb_proto = out.File
+	file_brbdxrpb_brbdxrpb_proto_rawDesc = nil
+	file_brbdxrpb_brbdxrpb_proto_goTypes = nil
+	file_brbdxrpb_brbdxrpb_proto_depIdxs = nil
 }

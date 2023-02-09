@@ -5,7 +5,7 @@ import (
 	mscpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb"
 	types1 "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
 	types4 "github.com/filecoin-project/mir/pkg/pb/brbctpb/types"
-	types3 "github.com/filecoin-project/mir/pkg/pb/brbencodedpb/types"
+	types3 "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/types"
 	types2 "github.com/filecoin-project/mir/pkg/pb/brbpb/types"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
@@ -48,8 +48,8 @@ func Message_TypeFromPb(pb messagepb.Message_Type) Message_Type {
 		return &Message_SbMessage{SbMessage: pb.SbMessage}
 	case *messagepb.Message_Brb:
 		return &Message_Brb{Brb: types2.MessageFromPb(pb.Brb)}
-	case *messagepb.Message_Brbencoded:
-		return &Message_Brbencoded{Brbencoded: types3.MessageFromPb(pb.Brbencoded)}
+	case *messagepb.Message_Brbdxr:
+		return &Message_Brbdxr{Brbdxr: types3.MessageFromPb(pb.Brbdxr)}
 	case *messagepb.Message_Brbct:
 		return &Message_Brbct{Brbct: types4.MessageFromPb(pb.Brbct)}
 	}
@@ -182,22 +182,22 @@ func (*Message_Brb) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_Brb]()}
 }
 
-type Message_Brbencoded struct {
-	Brbencoded *types3.Message
+type Message_Brbdxr struct {
+	Brbdxr *types3.Message
 }
 
-func (*Message_Brbencoded) isMessage_Type() {}
+func (*Message_Brbdxr) isMessage_Type() {}
 
-func (w *Message_Brbencoded) Unwrap() *types3.Message {
-	return w.Brbencoded
+func (w *Message_Brbdxr) Unwrap() *types3.Message {
+	return w.Brbdxr
 }
 
-func (w *Message_Brbencoded) Pb() messagepb.Message_Type {
-	return &messagepb.Message_Brbencoded{Brbencoded: (w.Brbencoded).Pb()}
+func (w *Message_Brbdxr) Pb() messagepb.Message_Type {
+	return &messagepb.Message_Brbdxr{Brbdxr: (w.Brbdxr).Pb()}
 }
 
-func (*Message_Brbencoded) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_Brbencoded]()}
+func (*Message_Brbdxr) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_Brbdxr]()}
 }
 
 type Message_Brbct struct {

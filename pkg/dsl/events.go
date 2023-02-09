@@ -247,7 +247,7 @@ func UponHashResult[C any](m Module, handler func(hashes [][]byte, context *C) e
 }
 
 func MerkleBuildResult[C any](m Module, handler func(rootHash []byte, proofs []*commonpb.MerklePath, context *C) error) {
-	UponEvent[*eventpb.Event_MerkelBuildResult](m, func(ev *eventpb.MerkleBuildResult) error {
+	UponEvent[*eventpb.Event_MerkleBuildResult](m, func(ev *eventpb.MerkleBuildResult) error {
 		originWrapper, ok := ev.Origin.Type.(*eventpb.MerkleBuildOrigin_Dsl)
 		if !ok {
 			return nil
@@ -264,7 +264,7 @@ func MerkleBuildResult[C any](m Module, handler func(rootHash []byte, proofs []*
 }
 
 func MerkleProofVerifyResult[C any](m Module, handler func(result bool, context *C) error) {
-	UponEvent[*eventpb.Event_MerkelVerifyResult](m, func(ev *eventpb.MerkleVerifyResult) error {
+	UponEvent[*eventpb.Event_MerkleVerifyResult](m, func(ev *eventpb.MerkleVerifyResult) error {
 		originWrapper, ok := ev.Origin.Type.(*eventpb.MerkleProofVerifyOrigin_Dsl)
 		if !ok {
 			return nil

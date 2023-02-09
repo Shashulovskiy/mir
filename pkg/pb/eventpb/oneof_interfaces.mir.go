@@ -6,7 +6,7 @@ import (
 	batchfetcherpb "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	brbctpb "github.com/filecoin-project/mir/pkg/pb/brbctpb"
-	brbencodedpb "github.com/filecoin-project/mir/pkg/pb/brbencodedpb"
+	brbdxrpb "github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	brbpb "github.com/filecoin-project/mir/pkg/pb/brbpb"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	contextstorepb "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
@@ -187,28 +187,28 @@ func (w *Event_Brb) Unwrap() *brbpb.Event {
 	return w.Brb
 }
 
-func (w *Event_Brbencoded) Unwrap() *brbencodedpb.Event {
-	return w.Brbencoded
+func (w *Event_Brbdxr) Unwrap() *brbdxrpb.Event {
+	return w.Brbdxr
 }
 
 func (w *Event_Brbct) Unwrap() *brbctpb.Event {
 	return w.Brbct
 }
 
-func (w *Event_MerkelBuildRequest) Unwrap() *MerkleBuildRequest {
-	return w.MerkelBuildRequest
+func (w *Event_MerkleBuildRequest) Unwrap() *MerkleBuildRequest {
+	return w.MerkleBuildRequest
 }
 
-func (w *Event_MerkelBuildResult) Unwrap() *MerkleBuildResult {
-	return w.MerkelBuildResult
+func (w *Event_MerkleBuildResult) Unwrap() *MerkleBuildResult {
+	return w.MerkleBuildResult
 }
 
-func (w *Event_MerkelVerifyRequest) Unwrap() *MerkleVerifyRequest {
-	return w.MerkelVerifyRequest
+func (w *Event_MerkleVerifyRequest) Unwrap() *MerkleVerifyRequest {
+	return w.MerkleVerifyRequest
 }
 
-func (w *Event_MerkelVerifyResult) Unwrap() *MerkleVerifyResult {
-	return w.MerkelVerifyResult
+func (w *Event_MerkleVerifyResult) Unwrap() *MerkleVerifyResult {
+	return w.MerkleVerifyResult
 }
 
 func (w *Event_DataEncodeRequest) Unwrap() *DataEncodeRequest {

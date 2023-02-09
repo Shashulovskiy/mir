@@ -26,13 +26,13 @@ func (m *MerkleProofVerifier) ApplyEvent(event *eventpb.Event) (*events.EventLis
 	case *eventpb.Event_Init:
 		// no actions on init
 		return events.EmptyList(), nil
-	case *eventpb.Event_MerkelBuildRequest:
-		hashes := make([]*merkle.MerkleHash, len(e.MerkelBuildRequest.Messages))
-		for i, msg := range e.MerkelBuildRequest.Messages {
+	case *eventpb.Event_MerkleBuildRequest:
+		hashes := make([]*merkle.MerkleHash, len(e.MerkleBuildRequest.Messages))
+		for i, msg := range e.MerkleBuildRequest.Messages {
 			hashes[i] = merkle.ComputeMerkleHash(msg)
 		}
 		tree := merkle.NewFullMerkleTree(hashes...)
-		paths := make([]*commonpb.MerklePath, len(e.MerkelBuildRequest.Messages))
+		paths := make([]*commonpb.MerklePath, len(e.MerkleBuildRequest.Messages))
 		for i, hash := range hashes {
 			path, err := tree.GetMerklePath(hash)
 			if err != nil {
@@ -49,19 +49,19 @@ func (m *MerkleProofVerifier) ApplyEvent(event *eventpb.Event) (*events.EventLis
 		}
 		//tree.GetMerklePath()
 		return events.ListOf(
-			events.MerkleBuildResult(t.ModuleID(e.MerkelBuildRequest.Origin.Module), (*tree.MerkleRoot)[:], paths, e.MerkelBuildRequest.Origin),
+			events.MerkleBuildResult(t.ModuleID(e.MerkleBuildRequest.Origin.Module), (*tree.MerkleRoot)[:], paths, e.MerkleBuildRequest.Origin),
 		), nil
-	case *eventpb.Event_MerkelVerifyRequest:
+	case *eventpb.Event_MerkleVerifyRequest:
 		// TODO
-		hashes := make([]*merkle.MerkleHash, len(e.MerkelVerifyRequest.Proof.Hashes))
-		for i, hash := range e.MerkelVerifyRequest.Proof.Hashes {
+		hashes := make([]*merkle.MerkleHash, len(e.MerkleVerifyRequest.Proof.Hashes))
+		for i, hash := range e.MerkleVerifyRequest.Proof.Hashes {
 			hashes[i] = (*merkle.MerkleHash)(hash)
 		}
 		merklePath := merkle.MerklePath{
 			Hashes:    hashes,
-			ProofPath: e.MerkelVerifyRequest.Proof.Proof,
+			ProofPath: e.MerkleVerifyRequest.Proof.Proof,
 		}
-		err := merklePath.Verify((*merkle.MerkleHash)(e.MerkelVerifyRequest.RootHash))
+		err := merklePath.Verify((*merkle.MerkleHash)(e.MerkleVerifyRequest.RootHash))
 
 		var result bool
 		if err != nil {
@@ -70,7 +70,7 @@ func (m *MerkleProofVerifier) ApplyEvent(event *eventpb.Event) (*events.EventLis
 			result = true
 		}
 		return events.ListOf(
-			events.MerkelProofVerifyResult(t.ModuleID(e.MerkelVerifyRequest.Origin.Module), result, e.MerkelVerifyRequest.Origin),
+			events.MerkleProofVerifyResult(t.ModuleID(e.MerkleVerifyRequest.Origin.Module), result, e.MerkleVerifyRequest.Origin),
 		), nil
 	default:
 		// Complain about all other incoming event types.

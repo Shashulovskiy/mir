@@ -1,8 +1,8 @@
-package brbencodedpbdsl
+package brbdxrpbdsl
 
 import (
 	dsl "github.com/filecoin-project/mir/pkg/dsl"
-	events "github.com/filecoin-project/mir/pkg/pb/brbencodedpb/events"
+	events "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/events"
 	types "github.com/filecoin-project/mir/pkg/types"
 )
 

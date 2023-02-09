@@ -1,8 +1,8 @@
-package merkeltreepbtypes
+package merkletreepbtypes
 
 import (
 	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
-	merkeltreepb "github.com/filecoin-project/mir/pkg/pb/merkeltreepb"
+	merkletreepb "github.com/filecoin-project/mir/pkg/pb/merkletreepb"
 	reflectutil "github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
 
@@ -13,7 +13,7 @@ type Event struct {
 type Event_Type interface {
 	mirreflect.GeneratedType
 	isEvent_Type()
-	Pb() merkeltreepb.Event_Type
+	Pb() merkletreepb.Event_Type
 }
 
 type Event_TypeWrapper[T any] interface {
@@ -21,11 +21,11 @@ type Event_TypeWrapper[T any] interface {
 	Unwrap() *T
 }
 
-func Event_TypeFromPb(pb merkeltreepb.Event_Type) Event_Type {
+func Event_TypeFromPb(pb merkletreepb.Event_Type) Event_Type {
 	switch pb := pb.(type) {
-	case *merkeltreepb.Event_VerifyRequest:
+	case *merkletreepb.Event_VerifyRequest:
 		return &Event_VerifyRequest{VerifyRequest: VerifyRequestFromPb(pb.VerifyRequest)}
-	case *merkeltreepb.Event_VerifyResult:
+	case *merkletreepb.Event_VerifyResult:
 		return &Event_VerifyResult{VerifyResult: VerifyResultFromPb(pb.VerifyResult)}
 	}
 	return nil
@@ -41,12 +41,12 @@ func (w *Event_VerifyRequest) Unwrap() *VerifyRequest {
 	return w.VerifyRequest
 }
 
-func (w *Event_VerifyRequest) Pb() merkeltreepb.Event_Type {
-	return &merkeltreepb.Event_VerifyRequest{VerifyRequest: (w.VerifyRequest).Pb()}
+func (w *Event_VerifyRequest) Pb() merkletreepb.Event_Type {
+	return &merkletreepb.Event_VerifyRequest{VerifyRequest: (w.VerifyRequest).Pb()}
 }
 
 func (*Event_VerifyRequest) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkeltreepb.Event_VerifyRequest]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkletreepb.Event_VerifyRequest]()}
 }
 
 type Event_VerifyResult struct {
@@ -59,28 +59,28 @@ func (w *Event_VerifyResult) Unwrap() *VerifyResult {
 	return w.VerifyResult
 }
 
-func (w *Event_VerifyResult) Pb() merkeltreepb.Event_Type {
-	return &merkeltreepb.Event_VerifyResult{VerifyResult: (w.VerifyResult).Pb()}
+func (w *Event_VerifyResult) Pb() merkletreepb.Event_Type {
+	return &merkletreepb.Event_VerifyResult{VerifyResult: (w.VerifyResult).Pb()}
 }
 
 func (*Event_VerifyResult) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkeltreepb.Event_VerifyResult]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkletreepb.Event_VerifyResult]()}
 }
 
-func EventFromPb(pb *merkeltreepb.Event) *Event {
+func EventFromPb(pb *merkletreepb.Event) *Event {
 	return &Event{
 		Type: Event_TypeFromPb(pb.Type),
 	}
 }
 
-func (m *Event) Pb() *merkeltreepb.Event {
-	return &merkeltreepb.Event{
+func (m *Event) Pb() *merkletreepb.Event {
+	return &merkletreepb.Event{
 		Type: (m.Type).Pb(),
 	}
 }
 
 func (*Event) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkeltreepb.Event]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkletreepb.Event]()}
 }
 
 type VerifyRequest struct {
@@ -89,7 +89,7 @@ type VerifyRequest struct {
 	Proof    [][]uint8
 }
 
-func VerifyRequestFromPb(pb *merkeltreepb.VerifyRequest) *VerifyRequest {
+func VerifyRequestFromPb(pb *merkletreepb.VerifyRequest) *VerifyRequest {
 	return &VerifyRequest{
 		Chunk:    pb.Chunk,
 		RootHash: pb.RootHash,
@@ -97,8 +97,8 @@ func VerifyRequestFromPb(pb *merkeltreepb.VerifyRequest) *VerifyRequest {
 	}
 }
 
-func (m *VerifyRequest) Pb() *merkeltreepb.VerifyRequest {
-	return &merkeltreepb.VerifyRequest{
+func (m *VerifyRequest) Pb() *merkletreepb.VerifyRequest {
+	return &merkletreepb.VerifyRequest{
 		Chunk:    m.Chunk,
 		RootHash: m.RootHash,
 		Proof:    m.Proof,
@@ -106,25 +106,25 @@ func (m *VerifyRequest) Pb() *merkeltreepb.VerifyRequest {
 }
 
 func (*VerifyRequest) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkeltreepb.VerifyRequest]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkletreepb.VerifyRequest]()}
 }
 
 type VerifyResult struct {
 	Success bool
 }
 
-func VerifyResultFromPb(pb *merkeltreepb.VerifyResult) *VerifyResult {
+func VerifyResultFromPb(pb *merkletreepb.VerifyResult) *VerifyResult {
 	return &VerifyResult{
 		Success: pb.Success,
 	}
 }
 
-func (m *VerifyResult) Pb() *merkeltreepb.VerifyResult {
-	return &merkeltreepb.VerifyResult{
+func (m *VerifyResult) Pb() *merkletreepb.VerifyResult {
+	return &merkletreepb.VerifyResult{
 		Success: m.Success,
 	}
 }
 
 func (*VerifyResult) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkeltreepb.VerifyResult]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*merkletreepb.VerifyResult]()}
 }

@@ -27,7 +27,7 @@ func (c *Coder) ApplyEvent(event *eventpb.Event) (*events.EventList, error) {
 		// TODO
 		println(e)
 		return events.ListOf(
-		//events.MerkelProofVerifyResult(t.ModuleID(e.DataEncodeRequest.Origin.Module), result, e.MerkelVerifyRequest.Origin),
+		//events.MerkleProofVerifyResult(t.ModuleID(e.DataEncodeRequest.Origin.Module), result, e.MerkleVerifyRequest.Origin),
 		), nil
 	default:
 		// Complain about all other incoming event types.

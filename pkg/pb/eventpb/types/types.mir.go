@@ -8,7 +8,7 @@ import (
 	types5 "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb/types"
 	types1 "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
 	types9 "github.com/filecoin-project/mir/pkg/pb/brbctpb/types"
-	types8 "github.com/filecoin-project/mir/pkg/pb/brbencodedpb/types"
+	types8 "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/types"
 	types7 "github.com/filecoin-project/mir/pkg/pb/brbpb/types"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	types11 "github.com/filecoin-project/mir/pkg/pb/contextstorepb/types"
@@ -125,18 +125,18 @@ func Event_TypeFromPb(pb eventpb.Event_Type) Event_Type {
 		return &Event_NewLogFile{NewLogFile: pb.NewLogFile}
 	case *eventpb.Event_Brb:
 		return &Event_Brb{Brb: types7.EventFromPb(pb.Brb)}
-	case *eventpb.Event_Brbencoded:
-		return &Event_Brbencoded{Brbencoded: types8.EventFromPb(pb.Brbencoded)}
+	case *eventpb.Event_Brbdxr:
+		return &Event_Brbdxr{Brbdxr: types8.EventFromPb(pb.Brbdxr)}
 	case *eventpb.Event_Brbct:
 		return &Event_Brbct{Brbct: types9.EventFromPb(pb.Brbct)}
-	case *eventpb.Event_MerkelBuildRequest:
-		return &Event_MerkelBuildRequest{MerkelBuildRequest: pb.MerkelBuildRequest}
-	case *eventpb.Event_MerkelBuildResult:
-		return &Event_MerkelBuildResult{MerkelBuildResult: pb.MerkelBuildResult}
-	case *eventpb.Event_MerkelVerifyRequest:
-		return &Event_MerkelVerifyRequest{MerkelVerifyRequest: pb.MerkelVerifyRequest}
-	case *eventpb.Event_MerkelVerifyResult:
-		return &Event_MerkelVerifyResult{MerkelVerifyResult: pb.MerkelVerifyResult}
+	case *eventpb.Event_MerkleBuildRequest:
+		return &Event_MerkleBuildRequest{MerkleBuildRequest: pb.MerkleBuildRequest}
+	case *eventpb.Event_MerkleBuildResult:
+		return &Event_MerkleBuildResult{MerkleBuildResult: pb.MerkleBuildResult}
+	case *eventpb.Event_MerkleVerifyRequest:
+		return &Event_MerkleVerifyRequest{MerkleVerifyRequest: pb.MerkleVerifyRequest}
+	case *eventpb.Event_MerkleVerifyResult:
+		return &Event_MerkleVerifyResult{MerkleVerifyResult: pb.MerkleVerifyResult}
 	case *eventpb.Event_DataEncodeRequest:
 		return &Event_DataEncodeRequest{DataEncodeRequest: pb.DataEncodeRequest}
 	case *eventpb.Event_DataEncodeResult:
@@ -873,22 +873,22 @@ func (*Event_Brb) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Brb]()}
 }
 
-type Event_Brbencoded struct {
-	Brbencoded *types8.Event
+type Event_Brbdxr struct {
+	Brbdxr *types8.Event
 }
 
-func (*Event_Brbencoded) isEvent_Type() {}
+func (*Event_Brbdxr) isEvent_Type() {}
 
-func (w *Event_Brbencoded) Unwrap() *types8.Event {
-	return w.Brbencoded
+func (w *Event_Brbdxr) Unwrap() *types8.Event {
+	return w.Brbdxr
 }
 
-func (w *Event_Brbencoded) Pb() eventpb.Event_Type {
-	return &eventpb.Event_Brbencoded{Brbencoded: (w.Brbencoded).Pb()}
+func (w *Event_Brbdxr) Pb() eventpb.Event_Type {
+	return &eventpb.Event_Brbdxr{Brbdxr: (w.Brbdxr).Pb()}
 }
 
-func (*Event_Brbencoded) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Brbencoded]()}
+func (*Event_Brbdxr) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Brbdxr]()}
 }
 
 type Event_Brbct struct {
@@ -909,76 +909,76 @@ func (*Event_Brbct) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Brbct]()}
 }
 
-type Event_MerkelBuildRequest struct {
-	MerkelBuildRequest *eventpb.MerkleBuildRequest
+type Event_MerkleBuildRequest struct {
+	MerkleBuildRequest *eventpb.MerkleBuildRequest
 }
 
-func (*Event_MerkelBuildRequest) isEvent_Type() {}
+func (*Event_MerkleBuildRequest) isEvent_Type() {}
 
-func (w *Event_MerkelBuildRequest) Unwrap() *eventpb.MerkleBuildRequest {
-	return w.MerkelBuildRequest
+func (w *Event_MerkleBuildRequest) Unwrap() *eventpb.MerkleBuildRequest {
+	return w.MerkleBuildRequest
 }
 
-func (w *Event_MerkelBuildRequest) Pb() eventpb.Event_Type {
-	return &eventpb.Event_MerkelBuildRequest{MerkelBuildRequest: w.MerkelBuildRequest}
+func (w *Event_MerkleBuildRequest) Pb() eventpb.Event_Type {
+	return &eventpb.Event_MerkleBuildRequest{MerkleBuildRequest: w.MerkleBuildRequest}
 }
 
-func (*Event_MerkelBuildRequest) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkelBuildRequest]()}
+func (*Event_MerkleBuildRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkleBuildRequest]()}
 }
 
-type Event_MerkelBuildResult struct {
-	MerkelBuildResult *eventpb.MerkleBuildResult
+type Event_MerkleBuildResult struct {
+	MerkleBuildResult *eventpb.MerkleBuildResult
 }
 
-func (*Event_MerkelBuildResult) isEvent_Type() {}
+func (*Event_MerkleBuildResult) isEvent_Type() {}
 
-func (w *Event_MerkelBuildResult) Unwrap() *eventpb.MerkleBuildResult {
-	return w.MerkelBuildResult
+func (w *Event_MerkleBuildResult) Unwrap() *eventpb.MerkleBuildResult {
+	return w.MerkleBuildResult
 }
 
-func (w *Event_MerkelBuildResult) Pb() eventpb.Event_Type {
-	return &eventpb.Event_MerkelBuildResult{MerkelBuildResult: w.MerkelBuildResult}
+func (w *Event_MerkleBuildResult) Pb() eventpb.Event_Type {
+	return &eventpb.Event_MerkleBuildResult{MerkleBuildResult: w.MerkleBuildResult}
 }
 
-func (*Event_MerkelBuildResult) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkelBuildResult]()}
+func (*Event_MerkleBuildResult) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkleBuildResult]()}
 }
 
-type Event_MerkelVerifyRequest struct {
-	MerkelVerifyRequest *eventpb.MerkleVerifyRequest
+type Event_MerkleVerifyRequest struct {
+	MerkleVerifyRequest *eventpb.MerkleVerifyRequest
 }
 
-func (*Event_MerkelVerifyRequest) isEvent_Type() {}
+func (*Event_MerkleVerifyRequest) isEvent_Type() {}
 
-func (w *Event_MerkelVerifyRequest) Unwrap() *eventpb.MerkleVerifyRequest {
-	return w.MerkelVerifyRequest
+func (w *Event_MerkleVerifyRequest) Unwrap() *eventpb.MerkleVerifyRequest {
+	return w.MerkleVerifyRequest
 }
 
-func (w *Event_MerkelVerifyRequest) Pb() eventpb.Event_Type {
-	return &eventpb.Event_MerkelVerifyRequest{MerkelVerifyRequest: w.MerkelVerifyRequest}
+func (w *Event_MerkleVerifyRequest) Pb() eventpb.Event_Type {
+	return &eventpb.Event_MerkleVerifyRequest{MerkleVerifyRequest: w.MerkleVerifyRequest}
 }
 
-func (*Event_MerkelVerifyRequest) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkelVerifyRequest]()}
+func (*Event_MerkleVerifyRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkleVerifyRequest]()}
 }
 
-type Event_MerkelVerifyResult struct {
-	MerkelVerifyResult *eventpb.MerkleVerifyResult
+type Event_MerkleVerifyResult struct {
+	MerkleVerifyResult *eventpb.MerkleVerifyResult
 }
 
-func (*Event_MerkelVerifyResult) isEvent_Type() {}
+func (*Event_MerkleVerifyResult) isEvent_Type() {}
 
-func (w *Event_MerkelVerifyResult) Unwrap() *eventpb.MerkleVerifyResult {
-	return w.MerkelVerifyResult
+func (w *Event_MerkleVerifyResult) Unwrap() *eventpb.MerkleVerifyResult {
+	return w.MerkleVerifyResult
 }
 
-func (w *Event_MerkelVerifyResult) Pb() eventpb.Event_Type {
-	return &eventpb.Event_MerkelVerifyResult{MerkelVerifyResult: w.MerkelVerifyResult}
+func (w *Event_MerkleVerifyResult) Pb() eventpb.Event_Type {
+	return &eventpb.Event_MerkleVerifyResult{MerkleVerifyResult: w.MerkleVerifyResult}
 }
 
-func (*Event_MerkelVerifyResult) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkelVerifyResult]()}
+func (*Event_MerkleVerifyResult) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkleVerifyResult]()}
 }
 
 type Event_DataEncodeRequest struct {

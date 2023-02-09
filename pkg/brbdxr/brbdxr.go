@@ -1,4 +1,4 @@
-package brbencoded
+package brbdxr
 
 import (
 	"bytes"
@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	"github.com/filecoin-project/mir/pkg/modules"
-	brbencpbdsl "github.com/filecoin-project/mir/pkg/pb/brbencodedpb/dsl"
-	brbencpbmsgs "github.com/filecoin-project/mir/pkg/pb/brbencodedpb/msgs"
+	brbdxrpbdsl "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/dsl"
+	brbdxrpbmsgs "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/msgs"
 	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
 	t "github.com/filecoin-project/mir/pkg/types"
 	rs "github.com/klauspost/reedsolomon"
@@ -28,7 +28,7 @@ type ModuleConfig struct {
 // DefaultModuleConfig returns a valid module config with default names for all modules.
 func DefaultModuleConfig(consumer t.ModuleID) *ModuleConfig {
 	return &ModuleConfig{
-		Self:     "brbencoded",
+		Self:     "brbdxr",
 		Consumer: consumer,
 		Net:      "net",
 		Crypto:   "crypto",
@@ -65,8 +65,8 @@ type messageContent struct {
 	chunk string
 }
 
-// brbEncodedModuleState represents the state of the brb module.
-type brbEncodedModuleState struct {
+// brbDxrModuleState represents the state of the brb module.
+type brbDxrModuleState struct {
 	sentEcho  bool
 	sentReady bool
 	delivered bool
@@ -81,7 +81,6 @@ type brbEncodedModuleState struct {
 }
 
 func incrementAndUpdateAccumulator(hash, chunk *[]byte, counts *map[messageContent]int, accumulator *Accumulator) {
-	// TODO cant store []byte in a map
 	var content = messageContent{
 		hash:  string(*hash),
 		chunk: string(*chunk),
@@ -99,14 +98,14 @@ func incrementAndUpdateAccumulator(hash, chunk *[]byte, counts *map[messageConte
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 	m := dsl.NewModule(mc.Self)
 
-	encoder, err := rs.New(params.GetN()-params.GetF(), params.GetF())
+	encoder, err := rs.New(params.GetN()-2*params.GetF(), 2*params.GetF())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create coder")
 	}
 
 	// upon event <brb, Init> do
-	state := brbEncodedModuleState{
+	state := brbDxrModuleState{
 		sentEcho:            false,
 		sentReady:           false,
 		delivered:           false,
@@ -119,15 +118,15 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	}
 
 	// upon event <brb, Broadcast | m> do
-	brbencpbdsl.UponBroadcastRequest(m, func(data []byte) error {
+	brbdxrpbdsl.UponBroadcastRequest(m, func(data []byte) error {
 		if nodeID != params.Leader {
 			return fmt.Errorf("only the leader node can receive requests")
 		}
-		eventpbdsl.SendMessage(m, mc.Net, brbencpbmsgs.StartMessage(mc.Self, data), params.AllNodes)
+		eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.StartMessage(mc.Self, data), params.AllNodes)
 		return nil
 	})
 
-	brbencpbdsl.UponStartMessageReceived(m, func(from t.NodeID, hdata []byte) error {
+	brbdxrpbdsl.UponStartMessageReceived(m, func(from t.NodeID, hdata []byte) error {
 		if from == params.Leader && state.sentEcho == false {
 			state.sentEcho = true
 
@@ -144,13 +143,13 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	})
 
 	dsl.UponHashResult(m, func(hashes [][]byte, context *hashInitialMessageContext) error {
-		chunkSize := int(math.Ceil(float64(len(context.data)) / float64(params.GetN()-params.GetF())))
+		chunkSize := int(math.Ceil(float64(len(context.data)) / float64(params.GetN()-2*params.GetF())))
 		encoded := make([][]byte, params.GetN())
 		for i := range encoded {
 			encoded[i] = make([]byte, chunkSize)
 		}
 
-		for i, in := range encoded[:params.GetN()-params.GetF()] {
+		for i, in := range encoded[:params.GetN()-2*params.GetF()] {
 			for j := range in {
 				if i*chunkSize+j < len(context.data) {
 					in[j] = context.data[i*chunkSize+j]
@@ -167,12 +166,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 
 		for i, node := range params.AllNodes {
-			eventpbdsl.SendMessage(m, mc.Net, brbencpbmsgs.EchoMessage(mc.Self, hashes[0], encoded[i]), []t.NodeID{node})
+			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, hashes[0], encoded[i]), []t.NodeID{node})
 		}
 		return nil
 	})
 
-	brbencpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, hash, chunk []byte) error {
+	brbdxrpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, hash, chunk []byte) error {
 		if state.echos[from] == nil {
 			state.echos[from] = chunk
 
@@ -181,7 +180,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		return nil
 	})
 
-	brbencpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, hash, chunk []byte) error {
+	brbdxrpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, hash, chunk []byte) error {
 		if state.readys[from] == nil {
 			state.readys[from] = chunk
 
@@ -195,7 +194,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			state.readyMaxAccumulator.count > params.GetF()) && state.sentReady == false {
 
 			state.sentReady = true
-			eventpbdsl.SendMessage(m, mc.Net, brbencpbmsgs.ReadyMessage(
+			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.ReadyMessage(
 				mc.Self, state.echosMaxAccumulator.hash,
 				state.echosMaxAccumulator.chunk,
 			), params.AllNodes)
@@ -213,16 +212,14 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			}
 
 			err := encoder.Reconstruct(decoded)
-			if err != nil {
-				return err
+			if err == nil {
+				output := bytes.Join(decoded, []byte{})
+
+				size := binary.LittleEndian.Uint32(output[:4])
+				output = output[4 : 4+size]
+
+				dsl.HashOneMessage(m, mc.Hasher, [][]byte{output}, &hashVerificationContext{output: output})
 			}
-
-			output := bytes.Join(decoded, []byte{})
-
-			size := binary.LittleEndian.Uint32(output[:4])
-			output = output[4 : 4+size]
-
-			dsl.HashOneMessage(m, mc.Hasher, [][]byte{output}, &hashVerificationContext{output: output})
 		}
 		return nil
 	})
@@ -231,7 +228,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if bytes.Equal(hashes[0], state.readyMaxAccumulator.hash) {
 			if !state.delivered {
 				state.delivered = true
-				brbencpbdsl.Deliver(m, mc.Consumer, context.output)
+				brbdxrpbdsl.Deliver(m, mc.Consumer, context.output)
 			}
 		} else {
 			panic("?")

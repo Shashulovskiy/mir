@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.28.1
 // 	protoc        v3.21.4
-// source: merkeltreepb/merkeltreepb.proto
+// source: merkletreepb/merkletreepb.proto
 
-package merkeltreepb
+package merkletreepb
 
 import (
 	_ "github.com/filecoin-project/mir/pkg/pb/mir"
@@ -36,7 +36,7 @@ type Event struct {
 func (x *Event) Reset() {
 	*x = Event{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_merkeltreepb_merkeltreepb_proto_msgTypes[0]
+		mi := &file_merkletreepb_merkletreepb_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -49,7 +49,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_merkeltreepb_merkeltreepb_proto_msgTypes[0]
+	mi := &file_merkletreepb_merkletreepb_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +62,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_merkeltreepb_merkeltreepb_proto_rawDescGZIP(), []int{0}
+	return file_merkletreepb_merkletreepb_proto_rawDescGZIP(), []int{0}
 }
 
 func (m *Event) GetType() isEvent_Type {
@@ -115,7 +115,7 @@ type VerifyRequest struct {
 func (x *VerifyRequest) Reset() {
 	*x = VerifyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_merkeltreepb_merkeltreepb_proto_msgTypes[1]
+		mi := &file_merkletreepb_merkletreepb_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -128,7 +128,7 @@ func (x *VerifyRequest) String() string {
 func (*VerifyRequest) ProtoMessage() {}
 
 func (x *VerifyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_merkeltreepb_merkeltreepb_proto_msgTypes[1]
+	mi := &file_merkletreepb_merkletreepb_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -141,7 +141,7 @@ func (x *VerifyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyRequest.ProtoReflect.Descriptor instead.
 func (*VerifyRequest) Descriptor() ([]byte, []int) {
-	return file_merkeltreepb_merkeltreepb_proto_rawDescGZIP(), []int{1}
+	return file_merkletreepb_merkletreepb_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *VerifyRequest) GetChunk() []byte {
@@ -176,7 +176,7 @@ type VerifyResult struct {
 func (x *VerifyResult) Reset() {
 	*x = VerifyResult{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_merkeltreepb_merkeltreepb_proto_msgTypes[2]
+		mi := &file_merkletreepb_merkletreepb_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -189,7 +189,7 @@ func (x *VerifyResult) String() string {
 func (*VerifyResult) ProtoMessage() {}
 
 func (x *VerifyResult) ProtoReflect() protoreflect.Message {
-	mi := &file_merkeltreepb_merkeltreepb_proto_msgTypes[2]
+	mi := &file_merkletreepb_merkletreepb_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -202,7 +202,7 @@ func (x *VerifyResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyResult.ProtoReflect.Descriptor instead.
 func (*VerifyResult) Descriptor() ([]byte, []int) {
-	return file_merkeltreepb_merkeltreepb_proto_rawDescGZIP(), []int{2}
+	return file_merkletreepb_merkletreepb_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *VerifyResult) GetSuccess() bool {
@@ -212,9 +212,9 @@ func (x *VerifyResult) GetSuccess() bool {
 	return false
 }
 
-var File_merkeltreepb_merkeltreepb_proto protoreflect.FileDescriptor
+var File_merkletreepb_merkletreepb_proto protoreflect.FileDescriptor
 
-var file_merkeltreepb_merkeltreepb_proto_rawDesc = []byte{
+var file_merkletreepb_merkletreepb_proto_rawDesc = []byte{
 	0x0a, 0x1f, 0x6d, 0x65, 0x72, 0x6b, 0x65, 0x6c, 0x74, 0x72, 0x65, 0x65, 0x70, 0x62, 0x2f, 0x6d,
 	0x65, 0x72, 0x6b, 0x65, 0x6c, 0x74, 0x72, 0x65, 0x65, 0x70, 0x62, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x12, 0x0c, 0x6d, 0x65, 0x72, 0x6b, 0x65, 0x6c, 0x74, 0x72, 0x65, 0x65, 0x70, 0x62, 0x1a,
@@ -249,26 +249,26 @@ var file_merkeltreepb_merkeltreepb_proto_rawDesc = []byte{
 }
 
 var (
-	file_merkeltreepb_merkeltreepb_proto_rawDescOnce sync.Once
-	file_merkeltreepb_merkeltreepb_proto_rawDescData = file_merkeltreepb_merkeltreepb_proto_rawDesc
+	file_merkletreepb_merkletreepb_proto_rawDescOnce sync.Once
+	file_merkletreepb_merkletreepb_proto_rawDescData = file_merkletreepb_merkletreepb_proto_rawDesc
 )
 
-func file_merkeltreepb_merkeltreepb_proto_rawDescGZIP() []byte {
-	file_merkeltreepb_merkeltreepb_proto_rawDescOnce.Do(func() {
-		file_merkeltreepb_merkeltreepb_proto_rawDescData = protoimpl.X.CompressGZIP(file_merkeltreepb_merkeltreepb_proto_rawDescData)
+func file_merkletreepb_merkletreepb_proto_rawDescGZIP() []byte {
+	file_merkletreepb_merkletreepb_proto_rawDescOnce.Do(func() {
+		file_merkletreepb_merkletreepb_proto_rawDescData = protoimpl.X.CompressGZIP(file_merkletreepb_merkletreepb_proto_rawDescData)
 	})
-	return file_merkeltreepb_merkeltreepb_proto_rawDescData
+	return file_merkletreepb_merkletreepb_proto_rawDescData
 }
 
-var file_merkeltreepb_merkeltreepb_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_merkeltreepb_merkeltreepb_proto_goTypes = []interface{}{
-	(*Event)(nil),         // 0: merkeltreepb.Event
-	(*VerifyRequest)(nil), // 1: merkeltreepb.VerifyRequest
-	(*VerifyResult)(nil),  // 2: merkeltreepb.VerifyResult
+var file_merkletreepb_merkletreepb_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_merkletreepb_merkletreepb_proto_goTypes = []interface{}{
+	(*Event)(nil),         // 0: merkletreepb.Event
+	(*VerifyRequest)(nil), // 1: merkletreepb.VerifyRequest
+	(*VerifyResult)(nil),  // 2: merkletreepb.VerifyResult
 }
-var file_merkeltreepb_merkeltreepb_proto_depIdxs = []int32{
-	1, // 0: merkeltreepb.Event.verify_request:type_name -> merkeltreepb.VerifyRequest
-	2, // 1: merkeltreepb.Event.verify_result:type_name -> merkeltreepb.VerifyResult
+var file_merkletreepb_merkletreepb_proto_depIdxs = []int32{
+	1, // 0: merkletreepb.Event.verify_request:type_name -> merkletreepb.VerifyRequest
+	2, // 1: merkletreepb.Event.verify_result:type_name -> merkletreepb.VerifyResult
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -276,13 +276,13 @@ var file_merkeltreepb_merkeltreepb_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_merkeltreepb_merkeltreepb_proto_init() }
-func file_merkeltreepb_merkeltreepb_proto_init() {
-	if File_merkeltreepb_merkeltreepb_proto != nil {
+func init() { file_merkletreepb_merkletreepb_proto_init() }
+func file_merkletreepb_merkletreepb_proto_init() {
+	if File_merkletreepb_merkletreepb_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_merkeltreepb_merkeltreepb_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_merkletreepb_merkletreepb_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Event); i {
 			case 0:
 				return &v.state
@@ -294,7 +294,7 @@ func file_merkeltreepb_merkeltreepb_proto_init() {
 				return nil
 			}
 		}
-		file_merkeltreepb_merkeltreepb_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_merkletreepb_merkletreepb_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*VerifyRequest); i {
 			case 0:
 				return &v.state
@@ -306,7 +306,7 @@ func file_merkeltreepb_merkeltreepb_proto_init() {
 				return nil
 			}
 		}
-		file_merkeltreepb_merkeltreepb_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_merkletreepb_merkletreepb_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*VerifyResult); i {
 			case 0:
 				return &v.state
@@ -319,7 +319,7 @@ func file_merkeltreepb_merkeltreepb_proto_init() {
 			}
 		}
 	}
-	file_merkeltreepb_merkeltreepb_proto_msgTypes[0].OneofWrappers = []interface{}{
+	file_merkletreepb_merkletreepb_proto_msgTypes[0].OneofWrappers = []interface{}{
 		(*Event_VerifyRequest)(nil),
 		(*Event_VerifyResult)(nil),
 	}
@@ -327,18 +327,18 @@ func file_merkeltreepb_merkeltreepb_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_merkeltreepb_merkeltreepb_proto_rawDesc,
+			RawDescriptor: file_merkletreepb_merkletreepb_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_merkeltreepb_merkeltreepb_proto_goTypes,
-		DependencyIndexes: file_merkeltreepb_merkeltreepb_proto_depIdxs,
-		MessageInfos:      file_merkeltreepb_merkeltreepb_proto_msgTypes,
+		GoTypes:           file_merkletreepb_merkletreepb_proto_goTypes,
+		DependencyIndexes: file_merkletreepb_merkletreepb_proto_depIdxs,
+		MessageInfos:      file_merkletreepb_merkletreepb_proto_msgTypes,
 	}.Build()
-	File_merkeltreepb_merkeltreepb_proto = out.File
-	file_merkeltreepb_merkeltreepb_proto_rawDesc = nil
-	file_merkeltreepb_merkeltreepb_proto_goTypes = nil
-	file_merkeltreepb_merkeltreepb_proto_depIdxs = nil
+	File_merkletreepb_merkletreepb_proto = out.File
+	file_merkletreepb_merkletreepb_proto_rawDesc = nil
+	file_merkletreepb_merkletreepb_proto_goTypes = nil
+	file_merkletreepb_merkletreepb_proto_depIdxs = nil
 }

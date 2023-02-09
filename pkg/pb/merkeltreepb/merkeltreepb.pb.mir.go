@@ -1,4 +1,4 @@
-package merkeltreepb
+package merkletreepb
 
 import (
 	reflect "reflect"

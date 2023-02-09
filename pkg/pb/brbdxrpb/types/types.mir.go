@@ -1,8 +1,8 @@
-package brbencodedpbtypes
+package brbdxrpbtypes
 
 import (
 	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
-	brbencodedpb "github.com/filecoin-project/mir/pkg/pb/brbencodedpb"
+	brbdxrpb "github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	reflectutil "github.com/filecoin-project/mir/pkg/util/reflectutil"
 )
 
@@ -13,7 +13,7 @@ type Event struct {
 type Event_Type interface {
 	mirreflect.GeneratedType
 	isEvent_Type()
-	Pb() brbencodedpb.Event_Type
+	Pb() brbdxrpb.Event_Type
 }
 
 type Event_TypeWrapper[T any] interface {
@@ -21,11 +21,11 @@ type Event_TypeWrapper[T any] interface {
 	Unwrap() *T
 }
 
-func Event_TypeFromPb(pb brbencodedpb.Event_Type) Event_Type {
+func Event_TypeFromPb(pb brbdxrpb.Event_Type) Event_Type {
 	switch pb := pb.(type) {
-	case *brbencodedpb.Event_Request:
+	case *brbdxrpb.Event_Request:
 		return &Event_Request{Request: BroadcastRequestFromPb(pb.Request)}
-	case *brbencodedpb.Event_Deliver:
+	case *brbdxrpb.Event_Deliver:
 		return &Event_Deliver{Deliver: DeliverFromPb(pb.Deliver)}
 	}
 	return nil
@@ -41,12 +41,12 @@ func (w *Event_Request) Unwrap() *BroadcastRequest {
 	return w.Request
 }
 
-func (w *Event_Request) Pb() brbencodedpb.Event_Type {
-	return &brbencodedpb.Event_Request{Request: (w.Request).Pb()}
+func (w *Event_Request) Pb() brbdxrpb.Event_Type {
+	return &brbdxrpb.Event_Request{Request: (w.Request).Pb()}
 }
 
 func (*Event_Request) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.Event_Request]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.Event_Request]()}
 }
 
 type Event_Deliver struct {
@@ -59,68 +59,68 @@ func (w *Event_Deliver) Unwrap() *Deliver {
 	return w.Deliver
 }
 
-func (w *Event_Deliver) Pb() brbencodedpb.Event_Type {
-	return &brbencodedpb.Event_Deliver{Deliver: (w.Deliver).Pb()}
+func (w *Event_Deliver) Pb() brbdxrpb.Event_Type {
+	return &brbdxrpb.Event_Deliver{Deliver: (w.Deliver).Pb()}
 }
 
 func (*Event_Deliver) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.Event_Deliver]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.Event_Deliver]()}
 }
 
-func EventFromPb(pb *brbencodedpb.Event) *Event {
+func EventFromPb(pb *brbdxrpb.Event) *Event {
 	return &Event{
 		Type: Event_TypeFromPb(pb.Type),
 	}
 }
 
-func (m *Event) Pb() *brbencodedpb.Event {
-	return &brbencodedpb.Event{
+func (m *Event) Pb() *brbdxrpb.Event {
+	return &brbdxrpb.Event{
 		Type: (m.Type).Pb(),
 	}
 }
 
 func (*Event) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.Event]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.Event]()}
 }
 
 type BroadcastRequest struct {
 	Data []uint8
 }
 
-func BroadcastRequestFromPb(pb *brbencodedpb.BroadcastRequest) *BroadcastRequest {
+func BroadcastRequestFromPb(pb *brbdxrpb.BroadcastRequest) *BroadcastRequest {
 	return &BroadcastRequest{
 		Data: pb.Data,
 	}
 }
 
-func (m *BroadcastRequest) Pb() *brbencodedpb.BroadcastRequest {
-	return &brbencodedpb.BroadcastRequest{
+func (m *BroadcastRequest) Pb() *brbdxrpb.BroadcastRequest {
+	return &brbdxrpb.BroadcastRequest{
 		Data: m.Data,
 	}
 }
 
 func (*BroadcastRequest) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.BroadcastRequest]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.BroadcastRequest]()}
 }
 
 type Deliver struct {
 	Data []uint8
 }
 
-func DeliverFromPb(pb *brbencodedpb.Deliver) *Deliver {
+func DeliverFromPb(pb *brbdxrpb.Deliver) *Deliver {
 	return &Deliver{
 		Data: pb.Data,
 	}
 }
 
-func (m *Deliver) Pb() *brbencodedpb.Deliver {
-	return &brbencodedpb.Deliver{
+func (m *Deliver) Pb() *brbdxrpb.Deliver {
+	return &brbdxrpb.Deliver{
 		Data: m.Data,
 	}
 }
 
 func (*Deliver) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.Deliver]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.Deliver]()}
 }
 
 type Message struct {
@@ -130,7 +130,7 @@ type Message struct {
 type Message_Type interface {
 	mirreflect.GeneratedType
 	isMessage_Type()
-	Pb() brbencodedpb.Message_Type
+	Pb() brbdxrpb.Message_Type
 }
 
 type Message_TypeWrapper[T any] interface {
@@ -138,13 +138,13 @@ type Message_TypeWrapper[T any] interface {
 	Unwrap() *T
 }
 
-func Message_TypeFromPb(pb brbencodedpb.Message_Type) Message_Type {
+func Message_TypeFromPb(pb brbdxrpb.Message_Type) Message_Type {
 	switch pb := pb.(type) {
-	case *brbencodedpb.Message_StartMessage:
+	case *brbdxrpb.Message_StartMessage:
 		return &Message_StartMessage{StartMessage: StartMessageFromPb(pb.StartMessage)}
-	case *brbencodedpb.Message_EchoMessage:
+	case *brbdxrpb.Message_EchoMessage:
 		return &Message_EchoMessage{EchoMessage: EchoMessageFromPb(pb.EchoMessage)}
-	case *brbencodedpb.Message_ReadyMessage:
+	case *brbdxrpb.Message_ReadyMessage:
 		return &Message_ReadyMessage{ReadyMessage: ReadyMessageFromPb(pb.ReadyMessage)}
 	}
 	return nil
@@ -160,12 +160,12 @@ func (w *Message_StartMessage) Unwrap() *StartMessage {
 	return w.StartMessage
 }
 
-func (w *Message_StartMessage) Pb() brbencodedpb.Message_Type {
-	return &brbencodedpb.Message_StartMessage{StartMessage: (w.StartMessage).Pb()}
+func (w *Message_StartMessage) Pb() brbdxrpb.Message_Type {
+	return &brbdxrpb.Message_StartMessage{StartMessage: (w.StartMessage).Pb()}
 }
 
 func (*Message_StartMessage) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.Message_StartMessage]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.Message_StartMessage]()}
 }
 
 type Message_EchoMessage struct {
@@ -178,12 +178,12 @@ func (w *Message_EchoMessage) Unwrap() *EchoMessage {
 	return w.EchoMessage
 }
 
-func (w *Message_EchoMessage) Pb() brbencodedpb.Message_Type {
-	return &brbencodedpb.Message_EchoMessage{EchoMessage: (w.EchoMessage).Pb()}
+func (w *Message_EchoMessage) Pb() brbdxrpb.Message_Type {
+	return &brbdxrpb.Message_EchoMessage{EchoMessage: (w.EchoMessage).Pb()}
 }
 
 func (*Message_EchoMessage) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.Message_EchoMessage]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.Message_EchoMessage]()}
 }
 
 type Message_ReadyMessage struct {
@@ -196,48 +196,48 @@ func (w *Message_ReadyMessage) Unwrap() *ReadyMessage {
 	return w.ReadyMessage
 }
 
-func (w *Message_ReadyMessage) Pb() brbencodedpb.Message_Type {
-	return &brbencodedpb.Message_ReadyMessage{ReadyMessage: (w.ReadyMessage).Pb()}
+func (w *Message_ReadyMessage) Pb() brbdxrpb.Message_Type {
+	return &brbdxrpb.Message_ReadyMessage{ReadyMessage: (w.ReadyMessage).Pb()}
 }
 
 func (*Message_ReadyMessage) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.Message_ReadyMessage]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.Message_ReadyMessage]()}
 }
 
-func MessageFromPb(pb *brbencodedpb.Message) *Message {
+func MessageFromPb(pb *brbdxrpb.Message) *Message {
 	return &Message{
 		Type: Message_TypeFromPb(pb.Type),
 	}
 }
 
-func (m *Message) Pb() *brbencodedpb.Message {
-	return &brbencodedpb.Message{
+func (m *Message) Pb() *brbdxrpb.Message {
+	return &brbdxrpb.Message{
 		Type: (m.Type).Pb(),
 	}
 }
 
 func (*Message) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.Message]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.Message]()}
 }
 
 type StartMessage struct {
 	Data []uint8
 }
 
-func StartMessageFromPb(pb *brbencodedpb.StartMessage) *StartMessage {
+func StartMessageFromPb(pb *brbdxrpb.StartMessage) *StartMessage {
 	return &StartMessage{
 		Data: pb.Data,
 	}
 }
 
-func (m *StartMessage) Pb() *brbencodedpb.StartMessage {
-	return &brbencodedpb.StartMessage{
+func (m *StartMessage) Pb() *brbdxrpb.StartMessage {
+	return &brbdxrpb.StartMessage{
 		Data: m.Data,
 	}
 }
 
 func (*StartMessage) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.StartMessage]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.StartMessage]()}
 }
 
 type EchoMessage struct {
@@ -245,22 +245,22 @@ type EchoMessage struct {
 	Chunk []uint8
 }
 
-func EchoMessageFromPb(pb *brbencodedpb.EchoMessage) *EchoMessage {
+func EchoMessageFromPb(pb *brbdxrpb.EchoMessage) *EchoMessage {
 	return &EchoMessage{
 		Hash:  pb.Hash,
 		Chunk: pb.Chunk,
 	}
 }
 
-func (m *EchoMessage) Pb() *brbencodedpb.EchoMessage {
-	return &brbencodedpb.EchoMessage{
+func (m *EchoMessage) Pb() *brbdxrpb.EchoMessage {
+	return &brbdxrpb.EchoMessage{
 		Hash:  m.Hash,
 		Chunk: m.Chunk,
 	}
 }
 
 func (*EchoMessage) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.EchoMessage]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.EchoMessage]()}
 }
 
 type ReadyMessage struct {
@@ -268,20 +268,20 @@ type ReadyMessage struct {
 	Chunk []uint8
 }
 
-func ReadyMessageFromPb(pb *brbencodedpb.ReadyMessage) *ReadyMessage {
+func ReadyMessageFromPb(pb *brbdxrpb.ReadyMessage) *ReadyMessage {
 	return &ReadyMessage{
 		Hash:  pb.Hash,
 		Chunk: pb.Chunk,
 	}
 }
 
-func (m *ReadyMessage) Pb() *brbencodedpb.ReadyMessage {
-	return &brbencodedpb.ReadyMessage{
+func (m *ReadyMessage) Pb() *brbdxrpb.ReadyMessage {
+	return &brbdxrpb.ReadyMessage{
 		Hash:  m.Hash,
 		Chunk: m.Chunk,
 	}
 }
 
 func (*ReadyMessage) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbencodedpb.ReadyMessage]()}
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*brbdxrpb.ReadyMessage]()}
 }

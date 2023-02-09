@@ -1,4 +1,4 @@
-package brbhash
+package brbct
 
 import (
 	"bytes"
@@ -30,7 +30,7 @@ type ModuleConfig struct {
 // DefaultModuleConfig returns a valid module config with default names for all modules.
 func DefaultModuleConfig(consumer t.ModuleID) *ModuleConfig {
 	return &ModuleConfig{
-		Self:                "brbhash",
+		Self:                "brbct",
 		Consumer:            consumer,
 		Net:                 "net",
 		Crypto:              "crypto",
@@ -285,18 +285,4 @@ type hashEchoMessageContext struct {
 	chunk    []byte
 	rootHash []byte
 	proof    *commonpb.MerklePath
-}
-
-type hashReadyMessageContext struct {
-	fromId int64
-	chunk  []byte
-}
-
-type hashEchoResultContext struct {
-	decoded [][]byte
-}
-
-type hashReadyResultContext struct {
-	decoded [][]byte
-	hashes  [][]byte
 }

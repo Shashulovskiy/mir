@@ -17,7 +17,7 @@ import (
 	batchfetcherpb "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	brbctpb "github.com/filecoin-project/mir/pkg/pb/brbctpb"
-	brbencodedpb "github.com/filecoin-project/mir/pkg/pb/brbencodedpb"
+	brbdxrpb "github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	brbpb "github.com/filecoin-project/mir/pkg/pb/brbpb"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	commonpb "github.com/filecoin-project/mir/pkg/pb/commonpb"
@@ -95,12 +95,12 @@ type Event struct {
 	//	*Event_SbEvent
 	//	*Event_NewLogFile
 	//	*Event_Brb
-	//	*Event_Brbencoded
+	//	*Event_Brbdxr
 	//	*Event_Brbct
-	//	*Event_MerkelBuildRequest
-	//	*Event_MerkelBuildResult
-	//	*Event_MerkelVerifyRequest
-	//	*Event_MerkelVerifyResult
+	//	*Event_MerkleBuildRequest
+	//	*Event_MerkleBuildResult
+	//	*Event_MerkleVerifyRequest
+	//	*Event_MerkleVerifyResult
 	//	*Event_DataEncodeRequest
 	//	*Event_DataEncodeResult
 	//	*Event_DataDecodeRequest
@@ -437,9 +437,9 @@ func (x *Event) GetBrb() *brbpb.Event {
 	return nil
 }
 
-func (x *Event) GetBrbencoded() *brbencodedpb.Event {
-	if x, ok := x.GetType().(*Event_Brbencoded); ok {
-		return x.Brbencoded
+func (x *Event) GetBrbdxr() *brbdxrpb.Event {
+	if x, ok := x.GetType().(*Event_Brbdxr); ok {
+		return x.Brbdxr
 	}
 	return nil
 }
@@ -451,30 +451,30 @@ func (x *Event) GetBrbct() *brbctpb.Event {
 	return nil
 }
 
-func (x *Event) GetMerkelBuildRequest() *MerkleBuildRequest {
-	if x, ok := x.GetType().(*Event_MerkelBuildRequest); ok {
-		return x.MerkelBuildRequest
+func (x *Event) GetMerkleBuildRequest() *MerkleBuildRequest {
+	if x, ok := x.GetType().(*Event_MerkleBuildRequest); ok {
+		return x.MerkleBuildRequest
 	}
 	return nil
 }
 
-func (x *Event) GetMerkelBuildResult() *MerkleBuildResult {
-	if x, ok := x.GetType().(*Event_MerkelBuildResult); ok {
-		return x.MerkelBuildResult
+func (x *Event) GetMerkleBuildResult() *MerkleBuildResult {
+	if x, ok := x.GetType().(*Event_MerkleBuildResult); ok {
+		return x.MerkleBuildResult
 	}
 	return nil
 }
 
-func (x *Event) GetMerkelVerifyRequest() *MerkleVerifyRequest {
-	if x, ok := x.GetType().(*Event_MerkelVerifyRequest); ok {
-		return x.MerkelVerifyRequest
+func (x *Event) GetMerkleVerifyRequest() *MerkleVerifyRequest {
+	if x, ok := x.GetType().(*Event_MerkleVerifyRequest); ok {
+		return x.MerkleVerifyRequest
 	}
 	return nil
 }
 
-func (x *Event) GetMerkelVerifyResult() *MerkleVerifyResult {
-	if x, ok := x.GetType().(*Event_MerkelVerifyResult); ok {
-		return x.MerkelVerifyResult
+func (x *Event) GetMerkleVerifyResult() *MerkleVerifyResult {
+	if x, ok := x.GetType().(*Event_MerkleVerifyResult); ok {
+		return x.MerkleVerifyResult
 	}
 	return nil
 }
@@ -699,28 +699,28 @@ type Event_Brb struct {
 	Brb *brbpb.Event `protobuf:"bytes,41,opt,name=brb,proto3,oneof"`
 }
 
-type Event_Brbencoded struct {
-	Brbencoded *brbencodedpb.Event `protobuf:"bytes,42,opt,name=brbencoded,proto3,oneof"`
+type Event_Brbdxr struct {
+	Brbdxr *brbdxrpb.Event `protobuf:"bytes,42,opt,name=brbdxr,proto3,oneof"`
 }
 
 type Event_Brbct struct {
 	Brbct *brbctpb.Event `protobuf:"bytes,43,opt,name=brbct,proto3,oneof"`
 }
 
-type Event_MerkelBuildRequest struct {
-	MerkelBuildRequest *MerkleBuildRequest `protobuf:"bytes,44,opt,name=merkel_build_request,json=merkelBuildRequest,proto3,oneof"`
+type Event_MerkleBuildRequest struct {
+	MerkleBuildRequest *MerkleBuildRequest `protobuf:"bytes,44,opt,name=merkle_build_request,json=merkleBuildRequest,proto3,oneof"`
 }
 
-type Event_MerkelBuildResult struct {
-	MerkelBuildResult *MerkleBuildResult `protobuf:"bytes,45,opt,name=merkel_build_result,json=merkelBuildResult,proto3,oneof"`
+type Event_MerkleBuildResult struct {
+	MerkleBuildResult *MerkleBuildResult `protobuf:"bytes,45,opt,name=merkle_build_result,json=merkleBuildResult,proto3,oneof"`
 }
 
-type Event_MerkelVerifyRequest struct {
-	MerkelVerifyRequest *MerkleVerifyRequest `protobuf:"bytes,46,opt,name=merkel_verify_request,json=merkelVerifyRequest,proto3,oneof"`
+type Event_MerkleVerifyRequest struct {
+	MerkleVerifyRequest *MerkleVerifyRequest `protobuf:"bytes,46,opt,name=merkle_verify_request,json=merkleVerifyRequest,proto3,oneof"`
 }
 
-type Event_MerkelVerifyResult struct {
-	MerkelVerifyResult *MerkleVerifyResult `protobuf:"bytes,47,opt,name=merkel_verify_result,json=merkelVerifyResult,proto3,oneof"`
+type Event_MerkleVerifyResult struct {
+	MerkleVerifyResult *MerkleVerifyResult `protobuf:"bytes,47,opt,name=merkle_verify_result,json=merkleVerifyResult,proto3,oneof"`
 }
 
 type Event_DataEncodeRequest struct {
@@ -828,17 +828,17 @@ func (*Event_NewLogFile) isEvent_Type() {}
 
 func (*Event_Brb) isEvent_Type() {}
 
-func (*Event_Brbencoded) isEvent_Type() {}
+func (*Event_Brbdxr) isEvent_Type() {}
 
 func (*Event_Brbct) isEvent_Type() {}
 
-func (*Event_MerkelBuildRequest) isEvent_Type() {}
+func (*Event_MerkleBuildRequest) isEvent_Type() {}
 
-func (*Event_MerkelBuildResult) isEvent_Type() {}
+func (*Event_MerkleBuildResult) isEvent_Type() {}
 
-func (*Event_MerkelVerifyRequest) isEvent_Type() {}
+func (*Event_MerkleVerifyRequest) isEvent_Type() {}
 
-func (*Event_MerkelVerifyResult) isEvent_Type() {}
+func (*Event_MerkleVerifyResult) isEvent_Type() {}
 
 func (*Event_DataEncodeRequest) isEvent_Type() {}
 
@@ -4349,7 +4349,7 @@ var file_eventpb_eventpb_proto_goTypes = []interface{}{
 	(*checkpointpb.Event)(nil),                // 55: checkpointpb.Event
 	(*ordererspb.SBInstanceEvent)(nil),        // 56: ordererspb.SBInstanceEvent
 	(*brbpb.Event)(nil),                       // 57: brbpb.Event
-	(*brbencodedpb.Event)(nil),                // 58: brbencodedpb.Event
+	(*brbdxrpb.Event)(nil),                // 58: brbdxrpb.Event
 	(*brbctpb.Event)(nil),                     // 59: brbctpb.Event
 	(*wrapperspb.StringValue)(nil),            // 60: google.protobuf.StringValue
 	(*wrapperspb.UInt64Value)(nil),            // 61: google.protobuf.UInt64Value
@@ -4412,12 +4412,12 @@ var file_eventpb_eventpb_proto_depIdxs = []int32{
 	56,  // 37: eventpb.Event.sb_event:type_name -> ordererspb.SBInstanceEvent
 	45,  // 38: eventpb.Event.new_log_file:type_name -> eventpb.NewLogFile
 	57,  // 39: eventpb.Event.brb:type_name -> brbpb.Event
-	58,  // 40: eventpb.Event.brbencoded:type_name -> brbencodedpb.Event
+	58,  // 40: eventpb.Event.brbdxr:type_name -> brbdxrpb.Event
 	59,  // 41: eventpb.Event.brbct:type_name -> brbctpb.Event
-	7,   // 42: eventpb.Event.merkel_build_request:type_name -> eventpb.MerkleBuildRequest
-	8,   // 43: eventpb.Event.merkel_build_result:type_name -> eventpb.MerkleBuildResult
-	10,  // 44: eventpb.Event.merkel_verify_request:type_name -> eventpb.MerkleVerifyRequest
-	11,  // 45: eventpb.Event.merkel_verify_result:type_name -> eventpb.MerkleVerifyResult
+	7,   // 42: eventpb.Event.merkle_build_request:type_name -> eventpb.MerkleBuildRequest
+	8,   // 43: eventpb.Event.merkle_build_result:type_name -> eventpb.MerkleBuildResult
+	10,  // 44: eventpb.Event.merkle_verify_request:type_name -> eventpb.MerkleVerifyRequest
+	11,  // 45: eventpb.Event.merkle_verify_result:type_name -> eventpb.MerkleVerifyResult
 	13,  // 46: eventpb.Event.data_encode_request:type_name -> eventpb.DataEncodeRequest
 	14,  // 47: eventpb.Event.data_encode_result:type_name -> eventpb.DataEncodeResult
 	16,  // 48: eventpb.Event.data_decode_request:type_name -> eventpb.DataDecodeRequest
@@ -5091,12 +5091,12 @@ func file_eventpb_eventpb_proto_init() {
 		(*Event_SbEvent)(nil),
 		(*Event_NewLogFile)(nil),
 		(*Event_Brb)(nil),
-		(*Event_Brbencoded)(nil),
+		(*Event_Brbdxr)(nil),
 		(*Event_Brbct)(nil),
-		(*Event_MerkelBuildRequest)(nil),
-		(*Event_MerkelBuildResult)(nil),
-		(*Event_MerkelVerifyRequest)(nil),
-		(*Event_MerkelVerifyResult)(nil),
+		(*Event_MerkleBuildRequest)(nil),
+		(*Event_MerkleBuildResult)(nil),
+		(*Event_MerkleVerifyRequest)(nil),
+		(*Event_MerkleVerifyResult)(nil),
 		(*Event_DataEncodeRequest)(nil),
 		(*Event_DataEncodeResult)(nil),
 		(*Event_DataDecodeRequest)(nil),

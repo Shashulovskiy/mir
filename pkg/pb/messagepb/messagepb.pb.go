@@ -15,7 +15,7 @@ import (
 	mscpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	brbctpb "github.com/filecoin-project/mir/pkg/pb/brbctpb"
-	brbencodedpb "github.com/filecoin-project/mir/pkg/pb/brbencodedpb"
+	brbdxrpb "github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	brbpb "github.com/filecoin-project/mir/pkg/pb/brbpb"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
@@ -50,7 +50,7 @@ type Message struct {
 	//	*Message_Checkpoint
 	//	*Message_SbMessage
 	//	*Message_Brb
-	//	*Message_Brbencoded
+	//	*Message_Brbdxr
 	//	*Message_Brbct
 	Type isMessage_Type `protobuf_oneof:"type"`
 }
@@ -150,9 +150,9 @@ func (x *Message) GetBrb() *brbpb.Message {
 	return nil
 }
 
-func (x *Message) GetBrbencoded() *brbencodedpb.Message {
-	if x, ok := x.GetType().(*Message_Brbencoded); ok {
-		return x.Brbencoded
+func (x *Message) GetBrbdxr() *brbdxrpb.Message {
+	if x, ok := x.GetType().(*Message_Brbdxr); ok {
+		return x.Brbdxr
 	}
 	return nil
 }
@@ -196,8 +196,8 @@ type Message_Brb struct {
 	Brb *brbpb.Message `protobuf:"bytes,8,opt,name=brb,proto3,oneof"`
 }
 
-type Message_Brbencoded struct {
-	Brbencoded *brbencodedpb.Message `protobuf:"bytes,9,opt,name=brbencoded,proto3,oneof"`
+type Message_Brbdxr struct {
+	Brbdxr *brbdxrpb.Message `protobuf:"bytes,9,opt,name=brbdxr,proto3,oneof"`
 }
 
 type Message_Brbct struct {
@@ -218,7 +218,7 @@ func (*Message_SbMessage) isMessage_Type() {}
 
 func (*Message_Brb) isMessage_Type() {}
 
-func (*Message_Brbencoded) isMessage_Type() {}
+func (*Message_Brbdxr) isMessage_Type() {}
 
 func (*Message_Brbct) isMessage_Type() {}
 
@@ -311,7 +311,7 @@ var file_messagepb_messagepb_proto_goTypes = []interface{}{
 	(*checkpointpb.Message)(nil),         // 5: checkpointpb.Message
 	(*ordererspb.SBInstanceMessage)(nil), // 6: ordererspb.SBInstanceMessage
 	(*brbpb.Message)(nil),                // 7: brbpb.Message
-	(*brbencodedpb.Message)(nil),         // 8: brbencodedpb.Message
+	(*brbdxrpb.Message)(nil),         // 8: brbdxrpb.Message
 	(*brbctpb.Message)(nil),              // 9: brbctpb.Message
 }
 var file_messagepb_messagepb_proto_depIdxs = []int32{
@@ -322,7 +322,7 @@ var file_messagepb_messagepb_proto_depIdxs = []int32{
 	5, // 4: messagepb.Message.checkpoint:type_name -> checkpointpb.Message
 	6, // 5: messagepb.Message.sb_message:type_name -> ordererspb.SBInstanceMessage
 	7, // 6: messagepb.Message.brb:type_name -> brbpb.Message
-	8, // 7: messagepb.Message.brbencoded:type_name -> brbencodedpb.Message
+	8, // 7: messagepb.Message.brbdxr:type_name -> brbdxrpb.Message
 	9, // 8: messagepb.Message.brbct:type_name -> brbctpb.Message
 	9, // [9:9] is the sub-list for method output_type
 	9, // [9:9] is the sub-list for method input_type
@@ -358,7 +358,7 @@ func file_messagepb_messagepb_proto_init() {
 		(*Message_Checkpoint)(nil),
 		(*Message_SbMessage)(nil),
 		(*Message_Brb)(nil),
-		(*Message_Brbencoded)(nil),
+		(*Message_Brbdxr)(nil),
 		(*Message_Brbct)(nil),
 	}
 	type x struct{}

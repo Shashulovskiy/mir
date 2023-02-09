@@ -153,7 +153,7 @@ func HashRequest(destModule t.ModuleID, data [][][]byte, origin *eventpb.HashOri
 func MerkleProofVerifyRequest(destModule t.ModuleID, rootHash []byte, proof *commonpb.MerklePath, origin *eventpb.MerkleProofVerifyOrigin) *eventpb.Event {
 	return &eventpb.Event{
 		DestModule: destModule.Pb(),
-		Type: &eventpb.Event_MerkelVerifyRequest{MerkelVerifyRequest: &eventpb.MerkleVerifyRequest{
+		Type: &eventpb.Event_MerkleVerifyRequest{MerkleVerifyRequest: &eventpb.MerkleVerifyRequest{
 			RootHash: rootHash,
 			Proof:    proof,
 			Origin:   origin,
@@ -164,7 +164,7 @@ func MerkleProofVerifyRequest(destModule t.ModuleID, rootHash []byte, proof *com
 func MerkleBuildRequest(destModule t.ModuleID, messages [][]byte, origin *eventpb.MerkleBuildOrigin) *eventpb.Event {
 	return &eventpb.Event{
 		DestModule: destModule.Pb(),
-		Type: &eventpb.Event_MerkelBuildRequest{MerkelBuildRequest: &eventpb.MerkleBuildRequest{
+		Type: &eventpb.Event_MerkleBuildRequest{MerkleBuildRequest: &eventpb.MerkleBuildRequest{
 			Messages: messages,
 			Origin:   origin,
 		}},
@@ -182,10 +182,10 @@ func HashResult(destModule t.ModuleID, digests [][]byte, origin *eventpb.HashOri
 	}}}
 }
 
-func MerkelProofVerifyResult(destModule t.ModuleID, result bool, origin *eventpb.MerkleProofVerifyOrigin) *eventpb.Event {
+func MerkleProofVerifyResult(destModule t.ModuleID, result bool, origin *eventpb.MerkleProofVerifyOrigin) *eventpb.Event {
 	return &eventpb.Event{
 		DestModule: destModule.Pb(),
-		Type: &eventpb.Event_MerkelVerifyResult{MerkelVerifyResult: &eventpb.MerkleVerifyResult{
+		Type: &eventpb.Event_MerkleVerifyResult{MerkleVerifyResult: &eventpb.MerkleVerifyResult{
 			Result: result,
 			Origin: origin,
 		}},
@@ -195,8 +195,8 @@ func MerkelProofVerifyResult(destModule t.ModuleID, result bool, origin *eventpb
 func MerkleBuildResult(destModule t.ModuleID, rootHash []byte, proofs []*commonpb.MerklePath, origin *eventpb.MerkleBuildOrigin) *eventpb.Event {
 	return &eventpb.Event{
 		DestModule: destModule.Pb(),
-		Type: &eventpb.Event_MerkelBuildResult{
-			MerkelBuildResult: &eventpb.MerkleBuildResult{
+		Type: &eventpb.Event_MerkleBuildResult{
+			MerkleBuildResult: &eventpb.MerkleBuildResult{
 				RootHash: rootHash,
 				Proofs:   proofs,
 				Origin:   origin,

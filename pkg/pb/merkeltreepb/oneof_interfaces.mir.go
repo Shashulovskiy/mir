@@ -1,4 +1,4 @@
-package merkeltreepb
+package merkletreepb
 
 type Event_Type = isEvent_Type
 

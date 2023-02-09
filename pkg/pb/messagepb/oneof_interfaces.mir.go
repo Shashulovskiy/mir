@@ -4,7 +4,7 @@ import (
 	mscpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	brbctpb "github.com/filecoin-project/mir/pkg/pb/brbctpb"
-	brbencodedpb "github.com/filecoin-project/mir/pkg/pb/brbencodedpb"
+	brbdxrpb "github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	brbpb "github.com/filecoin-project/mir/pkg/pb/brbpb"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
@@ -47,8 +47,8 @@ func (w *Message_Brb) Unwrap() *brbpb.Message {
 	return w.Brb
 }
 
-func (w *Message_Brbencoded) Unwrap() *brbencodedpb.Message {
-	return w.Brbencoded
+func (w *Message_Brbdxr) Unwrap() *brbdxrpb.Message {
+	return w.Brbdxr
 }
 
 func (w *Message_Brbct) Unwrap() *brbctpb.Message {
