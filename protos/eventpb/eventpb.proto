@@ -17,6 +17,7 @@ import "bcbpb/bcbpb.proto";
 import "brbpb/brbpb.proto";
 import "brbdxrpb/brbdxrpb.proto";
 import "brbctpb/brbctpb.proto";
+import "brbchannelpb/brbchannelpb.proto";
 import "contextstorepb/contextstorepb.proto";
 import "dslpb/dslpb.proto";
 import "mempoolpb/mempoolpb.proto";
@@ -81,7 +82,7 @@ message Event {
     ordererspb.SBInstanceEvent sb_event = 39;
     NewLogFile              new_log_file = 40;
     brbpb.Event             brb = 41;
-    brbdxrpb.Event      brbdxr = 42;
+    brbdxrpb.Event          brbdxr = 42;
     brbctpb.Event           brbct = 43;
     MerkleBuildRequest      merkle_build_request = 44;
     MerkleBuildResult       merkle_build_result = 45;
@@ -91,6 +92,7 @@ message Event {
     DataEncodeResult        data_encode_result = 49;
     DataDecodeRequest       data_decode_request = 50;
     DataDecodeResult        data_decode_result = 51;
+    brbchannelpb.Event      brbchannel = 52;
     // for unit-tests
     google.protobuf.StringValue testingString = 301;
     google.protobuf.UInt64Value testingUint = 302;

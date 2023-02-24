@@ -4,19 +4,23 @@ import (
 	"context"
 	"crypto"
 	"fmt"
-	"github.com/filecoin-project/mir/pkg/brbdxr"
-	"github.com/filecoin-project/mir/pkg/merkletree"
-	"os"
-
-	"gopkg.in/alecthomas/kingpin.v2"
-
 	"github.com/filecoin-project/mir"
+	"github.com/filecoin-project/mir/pkg/brbct"
+	"github.com/filecoin-project/mir/pkg/brbdxr"
 	mirCrypto "github.com/filecoin-project/mir/pkg/crypto"
+	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/logging"
+	"github.com/filecoin-project/mir/pkg/merkletree"
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/net/grpc"
+	"github.com/filecoin-project/mir/pkg/pb/brbctpb"
+	"github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
+	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
 	grpctools "github.com/filecoin-project/mir/pkg/util/grpc"
+	"gopkg.in/alecthomas/kingpin.v2"
+	"os"
+	"time"
 )
 
 const (
@@ -88,8 +92,26 @@ func run() error {
 	transportModule.Connect(nodeAddrs)
 
 	merkle := merkletree.NewVerifier()
+	hasher := mirCrypto.NewHasher(crypto.SHA1)
 
-	brbModule, err := brbdxr.NewModule(
+	brbCtModule, err := brbct.NewModule(
+		&brbct.ModuleConfig{
+			Self:                "brbct",
+			Consumer:            "control",
+			Net:                 "net",
+			Crypto:              "crypto",
+			Hasher:              "hasher",
+			MerkleProofVerifier: "merkle",
+		},
+		&brbct.ModuleParams{
+			InstanceUID: []byte("testing instance"),
+			AllNodes:    nodeIDs,
+			Leader:      nodeIDs[leaderNode],
+		},
+		args.OwnID,
+	)
+
+	brbDxrModule, err := brbdxr.NewModule(
 		&brbdxr.ModuleConfig{
 			Self:     "brbdxr",
 			Consumer: "control",
@@ -110,14 +132,58 @@ func run() error {
 		return nil
 	}
 
-	// control module reads the user input from the console and processes it.
-	control := newControlModule( /*isLeader=*/ args.OwnID == nodeIDs[leaderNode])
-	hasher := mirCrypto.NewHasher(crypto.SHA1)
+	counter := 0
+
+	control := newControlModule(
+		/*isLeader=*/ args.OwnID == nodeIDs[leaderNode],
+		func(id int64, message *[]byte, algorithm string) *events.EventList {
+			if algorithm == "brbdxr" {
+				return events.ListOf(&eventpb.Event{
+					DestModule: "brbdxr",
+					Type: &eventpb.Event_Brbdxr{
+						Brbdxr: &brbdxrpb.Event{
+							Type: &brbdxrpb.Event_Request{
+								Request: &brbdxrpb.BroadcastRequest{
+									Id:   id,
+									Data: *message,
+								},
+							},
+						},
+					},
+				})
+			} else if algorithm == "brbct" {
+				return events.ListOf(&eventpb.Event{
+					DestModule: "brbct",
+					Type: &eventpb.Event_Brbct{
+						Brbct: &brbctpb.Event{
+							Type: &brbctpb.Event_Request{
+								Request: &brbctpb.BroadcastRequest{
+									Id:   id,
+									Data: *message,
+								},
+							},
+						},
+					},
+				})
+			} else {
+				panic("Unknown algorithm")
+			}
+		},
+		func(bytes []byte) {
+			counter++
+		},
+	)
+
+	go func() {
+		time.Sleep(time.Minute)
+		println(counter)
+	}()
 
 	m := map[t.ModuleID]modules.Module{
 		"net":     transportModule,
 		"crypto":  mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
-		"brbdxr":  brbModule,
+		"brbct":   brbCtModule,
+		"brbdxr":  brbDxrModule,
 		"control": control,
 		"hasher":  hasher,
 		"merkle":  merkle,
@@ -138,9 +204,8 @@ func run() error {
 	return nil
 }
 
-// Parses the command-line arguments and returns them in a params struct.
 func parseArgs(args []string) *parsedArgs {
-	app := kingpin.New("chat-demo", "Small chat application to demonstrate the usage of the Mir library.")
+	app := kingpin.New("brb-channel", "BRB Chanel for continuously sending messages")
 	verbose := app.Flag("verbose", "Verbose mode.").Short('v').Bool()
 	trace := app.Flag("trace", "Very verbose mode.").Bool()
 	ownID := app.Arg("id", "ID of this node").Required().String()

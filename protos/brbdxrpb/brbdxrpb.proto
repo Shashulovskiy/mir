@@ -1,13 +1,11 @@
 syntax = "proto3";
 
-package brbctpb;
+package brbdxrpb;
 
-option go_package = "github.com/filecoin-project/mir/pkg/pb/brbctpb";
+option go_package = "github.com/filecoin-project/mir/pkg/pb/brbdxrpb";
 
 import "mir/codegen_extensions.proto";
 import "net/codegen_extensions.proto";
-
-import "commonpb/commonpb.proto";
 
 // ============================================================
 // Events
@@ -57,25 +55,23 @@ message Message {
 message StartMessage {
   option (net.message) = true;
 
-  int64 id = 1;
-  bytes chunk = 2;
-  bytes root_hash = 3;
-  commonpb.MerklePath proof = 4;
+  int64 id   = 1;
+  bytes data = 2;
 }
 
 
 message EchoMessage {
   option (net.message) = true;
 
-  int64 id = 1;
-  bytes chunk = 2;
-  bytes root_hash = 3;
-  commonpb.MerklePath proof = 4;
+  int64 id    = 1;
+  bytes hash  = 2;
+  bytes chunk = 3;
 }
 
 message ReadyMessage {
   option (net.message) = true;
 
-  int64 id = 1;
-  bytes root_hash = 2;
+  int64 id    = 1;
+  bytes hash  = 2;
+  bytes chunk = 3;
 }

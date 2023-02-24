@@ -1,15 +1,15 @@
-package brbctpbdsl
+package brbchannelpbdsl
 
 import (
 	dsl "github.com/filecoin-project/mir/pkg/dsl"
-	types "github.com/filecoin-project/mir/pkg/pb/brbctpb/types"
+	types "github.com/filecoin-project/mir/pkg/pb/brbchannelpb/types"
 	types1 "github.com/filecoin-project/mir/pkg/pb/eventpb/types"
 )
 
 // Module-specific dsl functions for processing events.
 
 func UponEvent[W types.Event_TypeWrapper[Ev], Ev any](m dsl.Module, handler func(ev *Ev) error) {
-	dsl.UponMirEvent[*types1.Event_Brbct](m, func(ev *types.Event) error {
+	dsl.UponMirEvent[*types1.Event_Brbchannel](m, func(ev *types.Event) error {
 		w, ok := ev.Type.(W)
 		if !ok {
 			return nil

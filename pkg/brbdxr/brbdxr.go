@@ -71,11 +71,11 @@ type brbDxrModuleState struct {
 	sentReady bool
 	delivered bool
 
-	echos               map[t.NodeID][]byte
+	echos               [][]byte
 	echoMessagesCount   map[messageContent]int
 	echosMaxAccumulator Accumulator
 
-	readys              map[t.NodeID][]byte
+	readys              [][]byte
 	readyMessagesCount  map[messageContent]int
 	readyMaxAccumulator Accumulator
 }
@@ -104,45 +104,47 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		return nil, errors.Wrap(err, "Unable to create coder")
 	}
 
-	// upon event <brb, Init> do
-	state := brbDxrModuleState{
-		sentEcho:            false,
-		sentReady:           false,
-		delivered:           false,
-		echos:               make(map[t.NodeID][]byte),
-		echoMessagesCount:   make(map[messageContent]int),
-		echosMaxAccumulator: Accumulator{},
-		readys:              make(map[t.NodeID][]byte),
-		readyMessagesCount:  make(map[messageContent]int),
-		readyMaxAccumulator: Accumulator{},
-	}
+	state := make(map[int64]*brbDxrModuleState)
+	lastId := int64(0)
 
 	// upon event <brb, Broadcast | m> do
-	brbdxrpbdsl.UponBroadcastRequest(m, func(data []byte) error {
+	brbdxrpbdsl.UponBroadcastRequest(m, func(id int64, data []byte) error {
 		if nodeID != params.Leader {
 			return fmt.Errorf("only the leader node can receive requests")
 		}
-		eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.StartMessage(mc.Self, data), params.AllNodes)
+		eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.StartMessage(mc.Self, id, data), params.AllNodes)
 		return nil
 	})
 
-	brbdxrpbdsl.UponStartMessageReceived(m, func(from t.NodeID, hdata []byte) error {
-		if from == params.Leader && state.sentEcho == false {
-			state.sentEcho = true
-
-			data := []byte{0, 0, 0, 0}
-			binary.LittleEndian.PutUint32(data, uint32(len(hdata)))
-			data = append(data, hdata...)
-
-			dsl.HashOneMessage(m, mc.Hasher, [][]byte{hdata}, &hashInitialMessageContext{data: data})
-
+	brbdxrpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id int64, hdata []byte) error {
+		if id <= lastId {
 			return nil
+		}
+		if from == params.Leader {
+			initialize(&state, id, params.GetN())
+
+			if !state[id].sentEcho {
+				state[id].sentEcho = true
+
+				data := []byte{0, 0, 0, 0}
+				binary.LittleEndian.PutUint32(data, uint32(len(hdata)))
+				data = append(data, hdata...)
+
+				dsl.HashOneMessage(m, mc.Hasher, [][]byte{hdata}, &hashInitialMessageContext{id: id, data: data})
+				return nil
+			} else {
+				return fmt.Errorf("already sent echo")
+			}
+
 		} else {
-			return fmt.Errorf("received start message not from leader or already sent echo")
+			return fmt.Errorf("received start message not from leader")
 		}
 	})
 
 	dsl.UponHashResult(m, func(hashes [][]byte, context *hashInitialMessageContext) error {
+		if context.id <= lastId {
+			return nil
+		}
 		chunkSize := int(math.Ceil(float64(len(context.data)) / float64(params.GetN()-2*params.GetF())))
 		encoded := make([][]byte, params.GetN())
 		for i := range encoded {
@@ -166,69 +168,89 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 
 		for i, node := range params.AllNodes {
-			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, hashes[0], encoded[i]), []t.NodeID{node})
+			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, hashes[0], encoded[i]), []t.NodeID{node})
 		}
 		return nil
 	})
 
-	brbdxrpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, hash, chunk []byte) error {
-		if state.echos[from] == nil {
-			state.echos[from] = chunk
+	brbdxrpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id int64, hash, chunk []byte) error {
+		if id <= lastId {
+			return nil
+		}
+		initialize(&state, id, params.GetN())
+		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
+		if err != nil {
+			return err
+		}
+		if state[id].echos[fromId] == nil {
+			state[id].echos[fromId] = chunk
 
-			incrementAndUpdateAccumulator(&hash, &chunk, &state.echoMessagesCount, &state.echosMaxAccumulator)
+			incrementAndUpdateAccumulator(&hash, &chunk, &state[id].echoMessagesCount, &state[id].echosMaxAccumulator)
 		}
 		return nil
 	})
 
-	brbdxrpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, hash, chunk []byte) error {
-		if state.readys[from] == nil {
-			state.readys[from] = chunk
+	brbdxrpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id int64, hash, chunk []byte) error {
+		if id <= lastId {
+			return nil
+		}
+		initialize(&state, id, params.GetN())
+		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
+		if err != nil {
+			return err
+		}
+		if state[id].readys[fromId] == nil {
+			state[id].readys[fromId] = chunk
 
-			incrementAndUpdateAccumulator(&hash, &chunk, &state.readyMessagesCount, &state.readyMaxAccumulator)
+			incrementAndUpdateAccumulator(&hash, &chunk, &state[id].readyMessagesCount, &state[id].readyMaxAccumulator)
 		}
 		return nil
 	})
 
 	dsl.UponCondition(m, func() error {
-		if (state.echosMaxAccumulator.count > (params.GetN()+params.GetF())/2 ||
-			state.readyMaxAccumulator.count > params.GetF()) && state.sentReady == false {
+		for id, currentState := range state {
+			if id <= lastId {
+				continue
+			}
+			if (currentState.echosMaxAccumulator.count > (params.GetN()+params.GetF())/2 ||
+				currentState.readyMaxAccumulator.count > params.GetF()) && currentState.sentReady == false {
 
-			state.sentReady = true
-			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.ReadyMessage(
-				mc.Self, state.echosMaxAccumulator.hash,
-				state.echosMaxAccumulator.chunk,
-			), params.AllNodes)
-		}
-
-		if len(state.readys) > 2*params.GetF() && state.delivered == false {
-
-			decoded := make([][]byte, params.GetN())
-			for key, value := range state.readys {
-				id, err := strconv.ParseInt(key.Pb(), 10, 64)
-				if err != nil {
-					return err
-				}
-				decoded[id] = value
+				currentState.sentReady = true
+				eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.ReadyMessage(
+					mc.Self, id, currentState.echosMaxAccumulator.hash,
+					currentState.echosMaxAccumulator.chunk,
+				), params.AllNodes)
 			}
 
-			err := encoder.Reconstruct(decoded)
-			if err == nil {
-				output := bytes.Join(decoded, []byte{})
+			if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
 
-				size := binary.LittleEndian.Uint32(output[:4])
-				output = output[4 : 4+size]
+				err := encoder.Reconstruct(currentState.readys)
+				if err == nil {
+					output := bytes.Join(currentState.readys, []byte{})
 
-				dsl.HashOneMessage(m, mc.Hasher, [][]byte{output}, &hashVerificationContext{output: output})
+					size := binary.LittleEndian.Uint32(output[:4])
+					output = output[4 : 4+size]
+
+					dsl.HashOneMessage(m, mc.Hasher, [][]byte{output}, &hashVerificationContext{id: id, output: output})
+				}
 			}
 		}
 		return nil
 	})
 
 	dsl.UponHashResult(m, func(hashes [][]byte, context *hashVerificationContext) error {
-		if bytes.Equal(hashes[0], state.readyMaxAccumulator.hash) {
-			if !state.delivered {
-				state.delivered = true
-				brbdxrpbdsl.Deliver(m, mc.Consumer, context.output)
+		if context.id <= lastId {
+			return nil
+		}
+		currentState := state[context.id]
+		if bytes.Equal(hashes[0], currentState.readyMaxAccumulator.hash) {
+			if !currentState.delivered {
+				currentState.delivered = true
+				if context.id > lastId {
+					lastId = context.id
+				}
+				brbdxrpbdsl.Deliver(m, mc.Consumer, context.id, context.output)
+				delete(state, context.id)
 			}
 		} else {
 			panic("?")
@@ -240,10 +262,28 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	return m, nil
 }
 
+func initialize(state *map[int64]*brbDxrModuleState, id int64, n int) {
+	if _, ok := (*state)[id]; !ok {
+		(*state)[id] = &brbDxrModuleState{
+			sentEcho:            false,
+			sentReady:           false,
+			delivered:           false,
+			echos:               make([][]byte, n),
+			echoMessagesCount:   make(map[messageContent]int),
+			echosMaxAccumulator: Accumulator{},
+			readys:              make([][]byte, n),
+			readyMessagesCount:  make(map[messageContent]int),
+			readyMaxAccumulator: Accumulator{},
+		}
+	}
+}
+
 type hashInitialMessageContext struct {
+	id   int64
 	data []byte
 }
 
 type hashVerificationContext struct {
+	id     int64
 	output []byte
 }

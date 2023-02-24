@@ -3,6 +3,7 @@ package messagepb
 import (
 	mscpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
+	brbchannelpb "github.com/filecoin-project/mir/pkg/pb/brbchannelpb"
 	brbctpb "github.com/filecoin-project/mir/pkg/pb/brbctpb"
 	brbdxrpb "github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	brbpb "github.com/filecoin-project/mir/pkg/pb/brbpb"
@@ -53,4 +54,8 @@ func (w *Message_Brbdxr) Unwrap() *brbdxrpb.Message {
 
 func (w *Message_Brbct) Unwrap() *brbctpb.Message {
 	return w.Brbct
+}
+
+func (w *Message_Brbchannel) Unwrap() *brbchannelpb.Message {
+	return w.Brbchannel
 }

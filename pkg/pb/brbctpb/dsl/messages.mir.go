@@ -22,20 +22,20 @@ func UponMessageReceived[W types.Message_TypeWrapper[M], M any](m dsl.Module, ha
 	})
 }
 
-func UponStartMessageReceived(m dsl.Module, handler func(from types1.NodeID, chunk []uint8, rootHash []uint8, proof *commonpb.MerklePath) error) {
+func UponStartMessageReceived(m dsl.Module, handler func(from types1.NodeID, id int64, chunk []uint8, rootHash []uint8, proof *commonpb.MerklePath) error) {
 	UponMessageReceived[*types.Message_StartMessage](m, func(from types1.NodeID, msg *types.StartMessage) error {
-		return handler(from, msg.Chunk, msg.RootHash, msg.Proof)
+		return handler(from, msg.Id, msg.Chunk, msg.RootHash, msg.Proof)
 	})
 }
 
-func UponEchoMessageReceived(m dsl.Module, handler func(from types1.NodeID, chunk []uint8, rootHash []uint8, proof *commonpb.MerklePath) error) {
+func UponEchoMessageReceived(m dsl.Module, handler func(from types1.NodeID, id int64, chunk []uint8, rootHash []uint8, proof *commonpb.MerklePath) error) {
 	UponMessageReceived[*types.Message_EchoMessage](m, func(from types1.NodeID, msg *types.EchoMessage) error {
-		return handler(from, msg.Chunk, msg.RootHash, msg.Proof)
+		return handler(from, msg.Id, msg.Chunk, msg.RootHash, msg.Proof)
 	})
 }
 
-func UponReadyMessageReceived(m dsl.Module, handler func(from types1.NodeID, rootHash []uint8) error) {
+func UponReadyMessageReceived(m dsl.Module, handler func(from types1.NodeID, id int64, rootHash []uint8) error) {
 	UponMessageReceived[*types.Message_ReadyMessage](m, func(from types1.NodeID, msg *types.ReadyMessage) error {
-		return handler(from, msg.RootHash)
+		return handler(from, msg.Id, msg.RootHash)
 	})
 }

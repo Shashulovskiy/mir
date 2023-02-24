@@ -7,13 +7,14 @@ import (
 	types "github.com/filecoin-project/mir/pkg/types"
 )
 
-func StartMessage(destModule types.ModuleID, chunk []uint8, rootHash []uint8, proof *commonpb.MerklePath) *types1.Message {
+func StartMessage(destModule types.ModuleID, id int64, chunk []uint8, rootHash []uint8, proof *commonpb.MerklePath) *types1.Message {
 	return &types1.Message{
 		DestModule: destModule,
 		Type: &types1.Message_Brbct{
 			Brbct: &types2.Message{
 				Type: &types2.Message_StartMessage{
 					StartMessage: &types2.StartMessage{
+						Id:       id,
 						Chunk:    chunk,
 						RootHash: rootHash,
 						Proof:    proof,
@@ -24,13 +25,14 @@ func StartMessage(destModule types.ModuleID, chunk []uint8, rootHash []uint8, pr
 	}
 }
 
-func EchoMessage(destModule types.ModuleID, chunk []uint8, rootHash []uint8, proof *commonpb.MerklePath) *types1.Message {
+func EchoMessage(destModule types.ModuleID, id int64, chunk []uint8, rootHash []uint8, proof *commonpb.MerklePath) *types1.Message {
 	return &types1.Message{
 		DestModule: destModule,
 		Type: &types1.Message_Brbct{
 			Brbct: &types2.Message{
 				Type: &types2.Message_EchoMessage{
 					EchoMessage: &types2.EchoMessage{
+						Id:       id,
 						Chunk:    chunk,
 						RootHash: rootHash,
 						Proof:    proof,
@@ -41,13 +43,14 @@ func EchoMessage(destModule types.ModuleID, chunk []uint8, rootHash []uint8, pro
 	}
 }
 
-func ReadyMessage(destModule types.ModuleID, rootHash []uint8) *types1.Message {
+func ReadyMessage(destModule types.ModuleID, id int64, rootHash []uint8) *types1.Message {
 	return &types1.Message{
 		DestModule: destModule,
 		Type: &types1.Message_Brbct{
 			Brbct: &types2.Message{
 				Type: &types2.Message_ReadyMessage{
 					ReadyMessage: &types2.ReadyMessage{
+						Id:       id,
 						RootHash: rootHash,
 					},
 				},

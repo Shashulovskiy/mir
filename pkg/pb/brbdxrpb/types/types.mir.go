@@ -84,17 +84,20 @@ func (*Event) MirReflect() mirreflect.Type {
 }
 
 type BroadcastRequest struct {
+	Id   int64
 	Data []uint8
 }
 
 func BroadcastRequestFromPb(pb *brbdxrpb.BroadcastRequest) *BroadcastRequest {
 	return &BroadcastRequest{
+		Id:   pb.Id,
 		Data: pb.Data,
 	}
 }
 
 func (m *BroadcastRequest) Pb() *brbdxrpb.BroadcastRequest {
 	return &brbdxrpb.BroadcastRequest{
+		Id:   m.Id,
 		Data: m.Data,
 	}
 }
@@ -104,17 +107,20 @@ func (*BroadcastRequest) MirReflect() mirreflect.Type {
 }
 
 type Deliver struct {
+	Id   int64
 	Data []uint8
 }
 
 func DeliverFromPb(pb *brbdxrpb.Deliver) *Deliver {
 	return &Deliver{
+		Id:   pb.Id,
 		Data: pb.Data,
 	}
 }
 
 func (m *Deliver) Pb() *brbdxrpb.Deliver {
 	return &brbdxrpb.Deliver{
+		Id:   m.Id,
 		Data: m.Data,
 	}
 }
@@ -221,17 +227,20 @@ func (*Message) MirReflect() mirreflect.Type {
 }
 
 type StartMessage struct {
+	Id   int64
 	Data []uint8
 }
 
 func StartMessageFromPb(pb *brbdxrpb.StartMessage) *StartMessage {
 	return &StartMessage{
+		Id:   pb.Id,
 		Data: pb.Data,
 	}
 }
 
 func (m *StartMessage) Pb() *brbdxrpb.StartMessage {
 	return &brbdxrpb.StartMessage{
+		Id:   m.Id,
 		Data: m.Data,
 	}
 }
@@ -241,12 +250,14 @@ func (*StartMessage) MirReflect() mirreflect.Type {
 }
 
 type EchoMessage struct {
+	Id    int64
 	Hash  []uint8
 	Chunk []uint8
 }
 
 func EchoMessageFromPb(pb *brbdxrpb.EchoMessage) *EchoMessage {
 	return &EchoMessage{
+		Id:    pb.Id,
 		Hash:  pb.Hash,
 		Chunk: pb.Chunk,
 	}
@@ -254,6 +265,7 @@ func EchoMessageFromPb(pb *brbdxrpb.EchoMessage) *EchoMessage {
 
 func (m *EchoMessage) Pb() *brbdxrpb.EchoMessage {
 	return &brbdxrpb.EchoMessage{
+		Id:    m.Id,
 		Hash:  m.Hash,
 		Chunk: m.Chunk,
 	}
@@ -264,12 +276,14 @@ func (*EchoMessage) MirReflect() mirreflect.Type {
 }
 
 type ReadyMessage struct {
+	Id    int64
 	Hash  []uint8
 	Chunk []uint8
 }
 
 func ReadyMessageFromPb(pb *brbdxrpb.ReadyMessage) *ReadyMessage {
 	return &ReadyMessage{
+		Id:    pb.Id,
 		Hash:  pb.Hash,
 		Chunk: pb.Chunk,
 	}
@@ -277,6 +291,7 @@ func ReadyMessageFromPb(pb *brbdxrpb.ReadyMessage) *ReadyMessage {
 
 func (m *ReadyMessage) Pb() *brbdxrpb.ReadyMessage {
 	return &brbdxrpb.ReadyMessage{
+		Id:    m.Id,
 		Hash:  m.Hash,
 		Chunk: m.Chunk,
 	}

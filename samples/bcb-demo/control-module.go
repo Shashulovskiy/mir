@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/filecoin-project/mir/pkg/pb/brbctpb"
+	"github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	"os"
 
 	"github.com/filecoin-project/mir/pkg/events"
@@ -43,12 +43,12 @@ func (m *controlModule) ApplyEvents(ctx context.Context, events *events.EventLis
 				fmt.Println("Waiting for the message...")
 			}
 
-		case *eventpb.Event_Brbct:
-			brbEvent := event.Type.(*eventpb.Event_Brbct).Brbct
+		case *eventpb.Event_Brbdxr:
+			brbEvent := event.Type.(*eventpb.Event_Brbdxr).Brbdxr
 			switch brbEvent.Type.(type) {
 
-			case *brbctpb.Event_Deliver:
-				deliverEvent := brbEvent.Type.(*brbctpb.Event_Deliver).Deliver
+			case *brbdxrpb.Event_Deliver:
+				deliverEvent := brbEvent.Type.(*brbdxrpb.Event_Deliver).Deliver
 				fmt.Println("Leader says: ", string(deliverEvent.Data))
 
 			default:
@@ -78,11 +78,11 @@ func (m *controlModule) readMessageFromConsole() error {
 	}
 
 	m.eventsOut <- events.ListOf(&eventpb.Event{
-		DestModule: "brbhash",
-		Type: &eventpb.Event_Brbct{
-			Brbct: &brbctpb.Event{
-				Type: &brbctpb.Event_Request{
-					Request: &brbctpb.BroadcastRequest{
+		DestModule: "brbdxr",
+		Type: &eventpb.Event_Brbdxr{
+			Brbdxr: &brbdxrpb.Event{
+				Type: &brbdxrpb.Event_Request{
+					Request: &brbdxrpb.BroadcastRequest{
 						Data: []byte(scanner.Text()),
 					},
 				},
