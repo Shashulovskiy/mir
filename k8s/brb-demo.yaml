@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brb
+  labels:
+    app-label: brb-label
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app-label: brb-label
+  template:
+    metadata:
+      labels:
+        app-label: brb-label
+    spec:
+      containers:
+        - name: brb-app
+          image: cr.yandex/crp5ffuolvl11ksq45o4/brb:v1
