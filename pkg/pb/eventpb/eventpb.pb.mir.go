@@ -56,7 +56,6 @@ func (*Event) ReflectTypeOptions() []reflect.Type {
 		reflect.TypeOf((*Event_DataEncodeResult)(nil)),
 		reflect.TypeOf((*Event_DataDecodeRequest)(nil)),
 		reflect.TypeOf((*Event_DataDecodeResult)(nil)),
-		reflect.TypeOf((*Event_Brbchannel)(nil)),
 		reflect.TypeOf((*Event_TestingString)(nil)),
 		reflect.TypeOf((*Event_TestingUint)(nil)),
 	}

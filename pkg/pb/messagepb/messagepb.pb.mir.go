@@ -15,6 +15,5 @@ func (*Message) ReflectTypeOptions() []reflect.Type {
 		reflect.TypeOf((*Message_Brb)(nil)),
 		reflect.TypeOf((*Message_Brbdxr)(nil)),
 		reflect.TypeOf((*Message_Brbct)(nil)),
-		reflect.TypeOf((*Message_Brbchannel)(nil)),
 	}
 }

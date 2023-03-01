@@ -13,7 +13,6 @@ import "bcbpb/bcbpb.proto";
 import "brbpb/brbpb.proto";
 import "brbdxrpb/brbdxrpb.proto";
 import "brbctpb/brbctpb.proto";
-import "brbchannelpb/brbchannelpb.proto";
 import "availabilitypb/mscpb/mscpb.proto";
 import "pingpongpb/pingpongpb.proto";
 import "checkpointpb/checkpointpb.proto";
@@ -41,6 +40,5 @@ message Message {
     brbpb.Message                brb                = 8;
     brbdxrpb.Message             brbdxr             = 9;
     brbctpb.Message              brbct              = 10;
-    brbchannelpb.Message         brbchannel         = 11;
   }
 }

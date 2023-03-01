@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"fmt"
 	"github.com/filecoin-project/mir"
+	"github.com/filecoin-project/mir/pkg/brb"
 	"github.com/filecoin-project/mir/pkg/brbct"
 	"github.com/filecoin-project/mir/pkg/brbdxr"
 	mirCrypto "github.com/filecoin-project/mir/pkg/crypto"
@@ -15,6 +16,7 @@ import (
 	"github.com/filecoin-project/mir/pkg/net/grpc"
 	"github.com/filecoin-project/mir/pkg/pb/brbctpb"
 	"github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
+	"github.com/filecoin-project/mir/pkg/pb/brbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
 	grpctools "github.com/filecoin-project/mir/pkg/util/grpc"
@@ -58,8 +60,8 @@ func main() {
 }
 
 func run() error {
+	println("Node starting..")
 	args := parseArgs(os.Args)
-
 	// Initialize logger that will be used throughout the code to print log messages.
 	var logger logging.Logger
 	if args.Trace {
@@ -93,6 +95,21 @@ func run() error {
 
 	merkle := merkletree.NewVerifier()
 	hasher := mirCrypto.NewHasher(crypto.SHA1)
+
+	brbBrachaModule := brb.NewModule(
+		&brb.ModuleConfig{
+			Self:     "brb",
+			Consumer: "control",
+			Net:      "net",
+			Crypto:   "crypto",
+		},
+		&brb.ModuleParams{
+			InstanceUID: []byte("testing instance"),
+			AllNodes:    nodeIDs,
+			Leader:      nodeIDs[leaderNode],
+		},
+		args.OwnID,
+	)
 
 	brbCtModule, err := brbct.NewModule(
 		&brbct.ModuleConfig{
@@ -165,6 +182,20 @@ func run() error {
 						},
 					},
 				})
+			} else if algorithm == "brb" {
+				return events.ListOf(&eventpb.Event{
+					DestModule: "brb",
+					Type: &eventpb.Event_Brb{
+						Brb: &brbpb.Event{
+							Type: &brbpb.Event_Request{
+								Request: &brbpb.BroadcastRequest{
+									Id:   id,
+									Data: *message,
+								},
+							},
+						},
+					},
+				})
 			} else {
 				panic("Unknown algorithm")
 			}
@@ -182,6 +213,7 @@ func run() error {
 	m := map[t.ModuleID]modules.Module{
 		"net":     transportModule,
 		"crypto":  mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
+		"brb":     brbBrachaModule,
 		"brbct":   brbCtModule,
 		"brbdxr":  brbDxrModule,
 		"control": control,

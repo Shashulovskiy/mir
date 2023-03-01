@@ -91,76 +91,112 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.
 	m := dsl.NewModule(mc.Self)
 
 	// upon event <brb, Init> do
-	state := brbModuleState{
-		request: nil,
-
-		sentEcho:          false,
-		sentReady:         false,
-		delivered:         false,
-		echos:             make(map[t.NodeID][]byte),
-		echoMessagesCount: make(map[string]int),
-		echosMaxAccumulator: struct {
-			MessageContent
-			int
-		}{MessageContent: nil, int: 0},
-		readys:             make(map[t.NodeID][]byte),
-		readyMessagesCount: make(map[string]int),
-		readyMaxAccumulator: struct {
-			MessageContent
-			int
-		}{MessageContent: nil, int: 0},
-	}
+	state := make(map[int64]*brbModuleState)
+	lastId := int64(0)
 
 	// upon event <brb, Broadcast | m> do
-	brbpbdsl.UponBroadcastRequest(m, func(data []byte) error {
+	brbpbdsl.UponBroadcastRequest(m, func(id int64, data []byte) error {
+		if id <= lastId {
+			return nil
+		}
 		if nodeID != params.Leader {
 			return fmt.Errorf("only the leader node can receive requests")
 		}
-		state.request = data
-		eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.StartMessage(mc.Self, data), params.AllNodes)
+		initialize(&state, id)
+		state[id].request = data
+		eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.StartMessage(mc.Self, id, data), params.AllNodes)
 		return nil
 	})
 
-	brbpbdsl.UponStartMessageReceived(m, func(from t.NodeID, data []byte) error {
-		if from == params.Leader && state.sentEcho == false {
-			state.sentEcho = true
-			eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.EchoMessage(mc.Self, data), params.AllNodes)
+	brbpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id int64, data []byte) error {
+		if id <= lastId {
 			return nil
+		}
+		if from == params.Leader {
+			initialize(&state, id)
+			if state[id].sentEcho == false {
+				state[id].sentEcho = true
+				eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.EchoMessage(mc.Self, id, data), params.AllNodes)
+				return nil
+			} else {
+				return fmt.Errorf("already sent echo")
+			}
 		} else {
-			return fmt.Errorf("received start message not from leader or already sent echo")
+			return fmt.Errorf("received start message not from leader")
 		}
 	})
 
-	brbpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, data []byte) error {
-		if state.echos[from] == nil {
-			state.echos[from] = data
+	brbpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id int64, data []byte) error {
+		if id <= lastId {
+			return nil
+		}
+		initialize(&state, id)
+		if state[id].echos[from] == nil {
+			state[id].echos[from] = data
 
-			incrementAndUpdateAccumulator(&data, &state.echoMessagesCount, &state.echosMaxAccumulator)
+			incrementAndUpdateAccumulator(&data, &state[id].echoMessagesCount, &state[id].echosMaxAccumulator)
 		}
 		return nil
 	})
 
-	brbpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, data []byte) error {
-		if state.readys[from] == nil {
-			state.readys[from] = data
+	brbpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id int64, data []byte) error {
+		if id <= lastId {
+			return nil
+		}
+		initialize(&state, id)
+		if state[id].readys[from] == nil {
+			state[id].readys[from] = data
 
-			incrementAndUpdateAccumulator(&data, &state.readyMessagesCount, &state.readyMaxAccumulator)
+			incrementAndUpdateAccumulator(&data, &state[id].readyMessagesCount, &state[id].readyMaxAccumulator)
 		}
 		return nil
 	})
 
 	dsl.UponCondition(m, func() error {
-		if (state.echosMaxAccumulator.int > (params.GetN()+params.GetF())/2 || state.readyMaxAccumulator.int > params.GetF()) && state.sentReady == false {
-			state.sentReady = true
-			eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.ReadyMessage(mc.Self, state.echosMaxAccumulator.MessageContent), params.AllNodes)
-		}
+		for id, currentState := range state {
+			if id <= lastId {
+				continue
+			}
+			if (currentState.echosMaxAccumulator.int > (params.GetN()+params.GetF())/2 || currentState.readyMaxAccumulator.int > params.GetF()) && currentState.sentReady == false {
+				currentState.sentReady = true
+				eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.ReadyMessage(mc.Self, id, currentState.echosMaxAccumulator.MessageContent), params.AllNodes)
+			}
 
-		if state.readyMaxAccumulator.int > 2*params.GetF() && state.delivered == false {
-			state.delivered = true
-			brbpbdsl.Deliver(m, mc.Consumer, state.readyMaxAccumulator.MessageContent)
+			if currentState.readyMaxAccumulator.int > 2*params.GetF() && currentState.delivered == false {
+				currentState.delivered = true
+				if id > lastId {
+					lastId = id
+				}
+				brbpbdsl.Deliver(m, mc.Consumer, id, currentState.readyMaxAccumulator.MessageContent)
+				delete(state, id)
+			}
 		}
 		return nil
 	})
 
 	return m
+}
+
+func initialize(state *map[int64]*brbModuleState, id int64) {
+	if _, ok := (*state)[id]; !ok {
+		(*state)[id] = &brbModuleState{
+			request: nil,
+
+			sentEcho:          false,
+			sentReady:         false,
+			delivered:         false,
+			echos:             make(map[t.NodeID][]byte),
+			echoMessagesCount: make(map[string]int),
+			echosMaxAccumulator: struct {
+				MessageContent
+				int
+			}{MessageContent: nil, int: 0},
+			readys:             make(map[t.NodeID][]byte),
+			readyMessagesCount: make(map[string]int),
+			readyMaxAccumulator: struct {
+				MessageContent
+				int
+			}{MessageContent: nil, int: 0},
+		}
+	}
 }

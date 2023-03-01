@@ -8,8 +8,8 @@ import (
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/brbctpb"
 	"github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
+	"github.com/filecoin-project/mir/pkg/pb/brbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
-	"github.com/pkg/profile"
 	"os"
 	"strconv"
 	"strings"
@@ -73,6 +73,18 @@ func (m *controlModule) ApplyEvents(ctx context.Context, events *events.EventLis
 				return fmt.Errorf("unknown brb event type: %T", brbEvent.Type)
 			}
 
+		case *eventpb.Event_Brb:
+			brbEvent := event.Type.(*eventpb.Event_Brb).Brb
+			switch brbEvent.Type.(type) {
+
+			case *brbpb.Event_Deliver:
+				deliverEvent := brbEvent.Type.(*brbpb.Event_Deliver).Deliver
+				m.broadcastDeliverValidator(deliverEvent.Data)
+				m.newIteration()
+			default:
+				return fmt.Errorf("unknown brb event type: %T", brbEvent.Type)
+			}
+
 		default:
 			return fmt.Errorf("unknown event type: %T", event.Type)
 		}
@@ -114,14 +126,15 @@ func (m *controlModule) newIteration() {
 					algorithm: split[2],
 				}
 				println("Starting benchmark...")
-				p := profile.Start(profile.CPUProfile, profile.ProfilePath(fmt.Sprintf("./%s_%d_%d/", m.currentBenchmark.algorithm, iterations, msgSize)))
+				//p := profile.Start(profile.MemProfile, profile.ProfilePath(fmt.Sprintf("./%s_%d_%d/", m.currentBenchmark.algorithm, iterations, msgSize)))
 				m.lastId++
 				m.sentMessages++
 				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, m.currentBenchmark.message, m.currentBenchmark.algorithm)
 				go func() {
 					time.Sleep(m.currentBenchmark.duration)
-					println("Total Iterations: ", m.sentMessages)
-					p.Stop()
+					fmt.Printf("Total Iterations for %s msgSize=%d: %d\n", split[2], msgSize, m.sentMessages)
+					fmt.Printf("  Iterations/sec for %s msgSize=%d: %f\n\n", split[2], msgSize, float64(m.sentMessages)/float64(iterations))
+					//p.Stop()
 					m.currentBenchmark = nil
 					m.sentMessages = 0
 				}()
@@ -133,3 +146,16 @@ func (m *controlModule) newIteration() {
 		}()
 	}
 }
+
+//128 60 brb
+//256 60 brb
+//512 60 brb
+//1024 60 brb
+//2048 60 brb
+//4096 60 brb
+//8192 60 brb
+//16384 60 brb
+//32768 60 brb
+//32768 60 brb
+//65536 60 brb
+//131072 60 brb

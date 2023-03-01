@@ -4,7 +4,6 @@ import (
 	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
 	mscpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/mscpb"
 	types1 "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
-	types5 "github.com/filecoin-project/mir/pkg/pb/brbchannelpb/types"
 	types4 "github.com/filecoin-project/mir/pkg/pb/brbctpb/types"
 	types3 "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/types"
 	types2 "github.com/filecoin-project/mir/pkg/pb/brbpb/types"
@@ -53,8 +52,6 @@ func Message_TypeFromPb(pb messagepb.Message_Type) Message_Type {
 		return &Message_Brbdxr{Brbdxr: types3.MessageFromPb(pb.Brbdxr)}
 	case *messagepb.Message_Brbct:
 		return &Message_Brbct{Brbct: types4.MessageFromPb(pb.Brbct)}
-	case *messagepb.Message_Brbchannel:
-		return &Message_Brbchannel{Brbchannel: types5.MessageFromPb(pb.Brbchannel)}
 	}
 	return nil
 }
@@ -219,24 +216,6 @@ func (w *Message_Brbct) Pb() messagepb.Message_Type {
 
 func (*Message_Brbct) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_Brbct]()}
-}
-
-type Message_Brbchannel struct {
-	Brbchannel *types5.Message
-}
-
-func (*Message_Brbchannel) isMessage_Type() {}
-
-func (w *Message_Brbchannel) Unwrap() *types5.Message {
-	return w.Brbchannel
-}
-
-func (w *Message_Brbchannel) Pb() messagepb.Message_Type {
-	return &messagepb.Message_Brbchannel{Brbchannel: (w.Brbchannel).Pb()}
-}
-
-func (*Message_Brbchannel) MirReflect() mirreflect.Type {
-	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*messagepb.Message_Brbchannel]()}
 }
 
 func MessageFromPb(pb *messagepb.Message) *Message {

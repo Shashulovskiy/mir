@@ -5,7 +5,6 @@ import (
 	batchdbpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/batchdbpb"
 	batchfetcherpb "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
-	brbchannelpb "github.com/filecoin-project/mir/pkg/pb/brbchannelpb"
 	brbctpb "github.com/filecoin-project/mir/pkg/pb/brbctpb"
 	brbdxrpb "github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	brbpb "github.com/filecoin-project/mir/pkg/pb/brbpb"
@@ -226,10 +225,6 @@ func (w *Event_DataDecodeRequest) Unwrap() *DataDecodeRequest {
 
 func (w *Event_DataDecodeResult) Unwrap() *DataDecodeResult {
 	return w.DataDecodeResult
-}
-
-func (w *Event_Brbchannel) Unwrap() *brbchannelpb.Event {
-	return w.Brbchannel
 }
 
 func (w *Event_TestingString) Unwrap() *wrapperspb.StringValue {

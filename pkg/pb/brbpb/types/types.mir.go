@@ -84,17 +84,20 @@ func (*Event) MirReflect() mirreflect.Type {
 }
 
 type BroadcastRequest struct {
+	Id   int64
 	Data []uint8
 }
 
 func BroadcastRequestFromPb(pb *brbpb.BroadcastRequest) *BroadcastRequest {
 	return &BroadcastRequest{
+		Id:   pb.Id,
 		Data: pb.Data,
 	}
 }
 
 func (m *BroadcastRequest) Pb() *brbpb.BroadcastRequest {
 	return &brbpb.BroadcastRequest{
+		Id:   m.Id,
 		Data: m.Data,
 	}
 }
@@ -104,17 +107,20 @@ func (*BroadcastRequest) MirReflect() mirreflect.Type {
 }
 
 type Deliver struct {
+	Id   int64
 	Data []uint8
 }
 
 func DeliverFromPb(pb *brbpb.Deliver) *Deliver {
 	return &Deliver{
+		Id:   pb.Id,
 		Data: pb.Data,
 	}
 }
 
 func (m *Deliver) Pb() *brbpb.Deliver {
 	return &brbpb.Deliver{
+		Id:   m.Id,
 		Data: m.Data,
 	}
 }
@@ -221,17 +227,20 @@ func (*Message) MirReflect() mirreflect.Type {
 }
 
 type StartMessage struct {
+	Id   int64
 	Data []uint8
 }
 
 func StartMessageFromPb(pb *brbpb.StartMessage) *StartMessage {
 	return &StartMessage{
+		Id:   pb.Id,
 		Data: pb.Data,
 	}
 }
 
 func (m *StartMessage) Pb() *brbpb.StartMessage {
 	return &brbpb.StartMessage{
+		Id:   m.Id,
 		Data: m.Data,
 	}
 }
@@ -241,17 +250,20 @@ func (*StartMessage) MirReflect() mirreflect.Type {
 }
 
 type EchoMessage struct {
+	Id   int64
 	Data []uint8
 }
 
 func EchoMessageFromPb(pb *brbpb.EchoMessage) *EchoMessage {
 	return &EchoMessage{
+		Id:   pb.Id,
 		Data: pb.Data,
 	}
 }
 
 func (m *EchoMessage) Pb() *brbpb.EchoMessage {
 	return &brbpb.EchoMessage{
+		Id:   m.Id,
 		Data: m.Data,
 	}
 }
@@ -261,17 +273,20 @@ func (*EchoMessage) MirReflect() mirreflect.Type {
 }
 
 type ReadyMessage struct {
+	Id   int64
 	Data []uint8
 }
 
 func ReadyMessageFromPb(pb *brbpb.ReadyMessage) *ReadyMessage {
 	return &ReadyMessage{
+		Id:   pb.Id,
 		Data: pb.Data,
 	}
 }
 
 func (m *ReadyMessage) Pb() *brbpb.ReadyMessage {
 	return &brbpb.ReadyMessage{
+		Id:   m.Id,
 		Data: m.Data,
 	}
 }

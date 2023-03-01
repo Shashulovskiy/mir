@@ -25,13 +25,15 @@ message Event {
 message BroadcastRequest {
   option (mir.event) = true;
 
-  bytes data = 1;
+  int64 id   = 1;
+  bytes data = 2;
 }
 
 message Deliver {
   option (mir.event) = true;
 
-  bytes data = 1;
+  int64 id   = 1;
+  bytes data = 2;
 }
 
 // ============================================================
@@ -53,18 +55,21 @@ message Message {
 message StartMessage {
   option (net.message) = true;
 
-  bytes data = 1;
+  int64 id   = 1;
+  bytes data = 2;
 }
 
 
 message EchoMessage {
   option (net.message) = true;
 
-  bytes data = 1;
+  int64 id   = 1;
+  bytes data = 2;
 }
 
 message ReadyMessage {
   option (net.message) = true;
 
-  bytes data = 1;
+  int64 id   = 1;
+  bytes data = 2;
 }

@@ -8,10 +8,10 @@ import (
 
 // Module-specific dsl functions for emitting events.
 
-func BroadcastRequest(m dsl.Module, destModule types.ModuleID, data []uint8) {
-	dsl.EmitMirEvent(m, events.BroadcastRequest(destModule, data))
+func BroadcastRequest(m dsl.Module, destModule types.ModuleID, id int64, data []uint8) {
+	dsl.EmitMirEvent(m, events.BroadcastRequest(destModule, id, data))
 }
 
-func Deliver(m dsl.Module, destModule types.ModuleID, data []uint8) {
-	dsl.EmitMirEvent(m, events.Deliver(destModule, data))
+func Deliver(m dsl.Module, destModule types.ModuleID, id int64, data []uint8) {
+	dsl.EmitMirEvent(m, events.Deliver(destModule, id, data))
 }

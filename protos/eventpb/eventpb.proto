@@ -17,7 +17,6 @@ import "bcbpb/bcbpb.proto";
 import "brbpb/brbpb.proto";
 import "brbdxrpb/brbdxrpb.proto";
 import "brbctpb/brbctpb.proto";
-import "brbchannelpb/brbchannelpb.proto";
 import "contextstorepb/contextstorepb.proto";
 import "dslpb/dslpb.proto";
 import "mempoolpb/mempoolpb.proto";
@@ -92,7 +91,6 @@ message Event {
     DataEncodeResult        data_encode_result = 49;
     DataDecodeRequest       data_decode_request = 50;
     DataDecodeResult        data_decode_result = 51;
-    brbchannelpb.Event      brbchannel = 52;
     // for unit-tests
     google.protobuf.StringValue testingString = 301;
     google.protobuf.UInt64Value testingUint = 302;
