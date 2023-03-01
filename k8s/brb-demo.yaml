@@ -18,3 +18,5 @@ spec:
       containers:
         - name: brb-app
           image: cr.yandex/crp5ffuolvl11ksq45o4/brb:v1
+      imagePullSecrets:
+        - name: imsecret
