@@ -7,5 +7,5 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-CMD go run ./samples/brb-channel
+CMD go run ./samples/brb-channel $POD_INDEX
 #CMD [". /node"]
