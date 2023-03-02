@@ -90,7 +90,7 @@ func run() error {
 
 	// Pass the IP addresses to each replica
 	for _, ip := range ips {
-		fmt.Printf("IP address: %s\n", ip)
+		println("IP address: ", ip)
 	}
 
 	println("Node starting..")
