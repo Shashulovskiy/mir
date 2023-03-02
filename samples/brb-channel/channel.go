@@ -21,6 +21,9 @@ import (
 	t "github.com/filecoin-project/mir/pkg/types"
 	grpctools "github.com/filecoin-project/mir/pkg/util/grpc"
 	"gopkg.in/alecthomas/kingpin.v2"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"time"
 )
@@ -60,6 +63,36 @@ func main() {
 }
 
 func run() error {
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		kubeconfig = os.Getenv("HOME") + "/.kube/config"
+	}
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create a Kubernetes clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+
+	// Get the IP addresses of all pods in the deployment
+	pods, err := clientset.CoreV1().Pods("default").List(context.TODO(), v1.ListOptions{LabelSelector: "app=myapp"})
+	if err != nil {
+		panic(err)
+	}
+	ips := make([]string, len(pods.Items))
+	for i, pod := range pods.Items {
+		ips[i] = pod.Status.PodIP
+	}
+
+	// Pass the IP addresses to each replica
+	for _, ip := range ips {
+		fmt.Printf("IP address: %s\n", ip)
+	}
+
 	println("Node starting..")
 	args := parseArgs(os.Args)
 	// Initialize logger that will be used throughout the code to print log messages.
