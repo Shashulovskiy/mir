@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto"
 	"fmt"
@@ -20,33 +21,24 @@ import (
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
 	grpctools "github.com/filecoin-project/mir/pkg/util/grpc"
+	"golang.org/x/exp/slices"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
+	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
-)
-
-const (
-
-	// Base port number for the nodes to listen to messages from each other.
-	// The nodes will listen on ports starting from nodeBasePort through nodeBasePort+3.
-	nodeBasePort = 10000
-
-	// The number of nodes participating in the chat.
-	nodeNumber = 4
-
-	// The index of the leader node of BCB.
-	leaderNode = 0
 )
 
 // parsedArgs represents parsed command-line parameters passed to the program.
 type parsedArgs struct {
 
-	// ID of this node.
-	// The package github.com/hyperledger-labs/mir/pkg/types defines this and other types used by the library.
-	OwnID t.NodeID
+	// File with tests
+	testFile string
 
 	// If set, print debug output to stdout.
 	Verbose bool
@@ -63,35 +55,55 @@ func main() {
 }
 
 func run() error {
-	kubeconfig := os.Getenv("KUBECONFIG")
-	if kubeconfig == "" {
-		kubeconfig = os.Getenv("HOME") + "/.kube/config"
-	}
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	temp, err := os.CreateTemp("", "logs")
 	if err != nil {
-		panic(err)
+		return err
 	}
+	l := log.New(temp, "INFO\t", log.Ldate|log.Ltime)
+	l.Println("Node starting")
 
-	// Create a Kubernetes clientset
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		l.Println(err.Error())
+		panic(err.Error())
+	}
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err)
+		l.Println(err.Error())
+		panic(err.Error())
 	}
 
-	// Get the IP addresses of all pods in the deployment
-	pods, err := clientset.CoreV1().Pods("default").List(context.TODO(), v1.ListOptions{LabelSelector: "app=myapp"})
+	// get the list of nodes
+	nodes, err := clientset.CoreV1().Pods("default").List(context.TODO(), v1.ListOptions{})
 	if err != nil {
-		panic(err)
+		if errors.IsNotFound(err) {
+			fmt.Println("Nodes not found")
+		} else {
+			panic(err.Error())
+		}
 	}
-	ips := make([]string, len(pods.Items))
-	for i, pod := range pods.Items {
-		ips[i] = pod.Status.PodIP
+	thisIp := os.Getenv("MY_POD_IP")
+	ips := make([]string, 0)
+
+	fmt.Printf("Self IP: %s\n", thisIp)
+
+	var ownID t.NodeID
+
+	// print the IP addresses of all nodes
+	for _, node := range nodes.Items {
+		ips = append(ips, node.Status.PodIP)
+		fmt.Printf("Node IP: %s\n", node.Status.PodIP)
 	}
 
-	// Pass the IP addresses to each replica
-	for _, ip := range ips {
-		println("IP address: ", ip)
+	slices.Sort(ips)
+
+	for i, ip := range ips {
+		if ip == thisIp {
+			ownID = t.NewNodeIDFromInt(i)
+		}
 	}
+
+	fmt.Printf("Own ID: %s\n", ownID)
 
 	println("Node starting..")
 	args := parseArgs(os.Args)
@@ -105,6 +117,12 @@ func run() error {
 		logger = logging.ConsoleWarnLogger // Only print errors and warnings by default.
 	}
 
+	tests := parseTests(args.testFile)
+
+	nodeNumber := len(ips)
+	nodeBasePort := 10000
+	leaderNode := 0
+
 	// IDs of nodes that are part of the system.
 	// This example uses a static configuration of nodeNumber nodes.
 	nodeIDs := make([]t.NodeID, nodeNumber)
@@ -114,10 +132,10 @@ func run() error {
 
 	nodeAddrs := make(map[t.NodeID]t.NodeAddress)
 	for i := range nodeIDs {
-		nodeAddrs[t.NewNodeIDFromInt(i)] = t.NodeAddress(grpctools.NewDummyMultiaddr(i + nodeBasePort))
+		nodeAddrs[t.NewNodeIDFromInt(i)] = t.NodeAddress(grpctools.NewMultiaddr(ips[i], nodeBasePort))
 	}
 
-	transportModule, err := grpc.NewTransport(args.OwnID, nodeAddrs[args.OwnID], logger)
+	transportModule, err := grpc.NewTransport(ownID, nodeAddrs[ownID], logger)
 	if err != nil {
 		return fmt.Errorf("failed to get network transport %w", err)
 	}
@@ -141,7 +159,7 @@ func run() error {
 			AllNodes:    nodeIDs,
 			Leader:      nodeIDs[leaderNode],
 		},
-		args.OwnID,
+		ownID,
 	)
 
 	brbCtModule, err := brbct.NewModule(
@@ -158,7 +176,7 @@ func run() error {
 			AllNodes:    nodeIDs,
 			Leader:      nodeIDs[leaderNode],
 		},
-		args.OwnID,
+		ownID,
 	)
 
 	brbDxrModule, err := brbdxr.NewModule(
@@ -175,7 +193,7 @@ func run() error {
 			AllNodes:    nodeIDs,
 			Leader:      nodeIDs[leaderNode],
 		},
-		args.OwnID,
+		ownID,
 	)
 
 	if err != nil {
@@ -185,7 +203,7 @@ func run() error {
 	counter := 0
 
 	control := newControlModule(
-		/*isLeader=*/ args.OwnID == nodeIDs[leaderNode],
+		/*isLeader=*/ ownID == nodeIDs[leaderNode],
 		func(id int64, message *[]byte, algorithm string) *events.EventList {
 			if algorithm == "brbdxr" {
 				return events.ListOf(&eventpb.Event{
@@ -236,6 +254,7 @@ func run() error {
 		func(bytes []byte) {
 			counter++
 		},
+		tests,
 	)
 
 	go func() {
@@ -273,15 +292,49 @@ func parseArgs(args []string) *parsedArgs {
 	app := kingpin.New("brb-channel", "BRB Chanel for continuously sending messages")
 	verbose := app.Flag("verbose", "Verbose mode.").Short('v').Bool()
 	trace := app.Flag("trace", "Very verbose mode.").Bool()
-	ownID := app.Arg("id", "ID of this node").Required().String()
+	testFile := app.Arg("testFile", "File with tests").Required().String()
 
 	if _, err := app.Parse(args[1:]); err != nil { // Skip args[0], which is the name of the program, not an argument.
 		app.FatalUsage("could not parse arguments: %v\n", err)
 	}
 
 	return &parsedArgs{
-		OwnID:   t.NodeID(*ownID),
-		Verbose: *verbose,
-		Trace:   *trace,
+		testFile: *testFile,
+		Verbose:  *verbose,
+		Trace:    *trace,
 	}
+}
+
+func parseTests(testFile string) []*Benchmark {
+	file, err := os.Open(testFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	benchmarks := make([]*Benchmark, 0)
+	for scanner.Scan() {
+		split := strings.Split(scanner.Text(), " ")
+		msgSize, err := strconv.ParseInt(split[0], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		duration, err := strconv.ParseInt(split[1], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		algorithm := split[2]
+
+		benchmarks = append(benchmarks, &Benchmark{
+			messageSize: msgSize,
+			duration:    time.Duration(duration * time.Second.Nanoseconds()),
+			algorithm:   algorithm,
+		})
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return benchmarks
 }

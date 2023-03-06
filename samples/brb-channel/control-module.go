@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/events"
@@ -10,9 +9,6 @@ import (
 	"github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	"github.com/filecoin-project/mir/pkg/pb/brbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -24,18 +20,19 @@ type controlModule struct {
 	currentBenchmark          *Benchmark
 	broadcastRequestGenerator func(int64, *[]byte, string) *events.EventList
 	broadcastDeliverValidator func([]byte)
+	tests                     []*Benchmark
+	lastTest                  int
 }
 
-func newControlModule(isLeader bool,
-	broadcastRequestGenerator func(int64, *[]byte, string) *events.EventList,
-	broadcastDeliverValidator func([]byte),
-) modules.ActiveModule {
+func newControlModule(isLeader bool, broadcastRequestGenerator func(int64, *[]byte, string) *events.EventList, broadcastDeliverValidator func([]byte), tests []*Benchmark) modules.ActiveModule {
 	return &controlModule{
 		eventsOut:                 make(chan *events.EventList),
 		lastId:                    0,
 		isLeader:                  isLeader,
 		broadcastRequestGenerator: broadcastRequestGenerator,
 		broadcastDeliverValidator: broadcastDeliverValidator,
+		tests:                     tests,
+		lastTest:                  0,
 	}
 }
 
@@ -101,39 +98,24 @@ func (m *controlModule) newIteration() {
 	if m.isLeader {
 		go func() {
 			if m.currentBenchmark == nil {
-				reader := bufio.NewReader(os.Stdin)
-				println("Input benchmark params: [msgSize] [duration] [algorithm]")
-				input, err := reader.ReadString('\n')
-				if err != nil {
-					return
-				}
-				split := strings.Split(input[:len(input)-1], " ")
-				msgSize, err := strconv.ParseInt(split[0], 10, 64)
-				if err != nil {
-					return
-				}
-				iterations, err := strconv.ParseInt(split[1], 10, 64)
-				if err != nil {
-					return
-				}
-				data := make([]byte, msgSize)
-				for i := int64(0); i < msgSize; i++ {
+				test := m.tests[m.lastTest]
+				m.lastTest++
+				data := make([]byte, test.messageSize)
+				for i := int64(0); i < test.messageSize; i++ {
 					data[i] = byte(42)
 				}
-				m.currentBenchmark = &Benchmark{
-					message:   &data,
-					duration:  time.Duration(iterations * time.Second.Nanoseconds()),
-					algorithm: split[2],
-				}
+				m.currentBenchmark = test
+				m.currentBenchmark.message = data
+
 				println("Starting benchmark...")
 				//p := profile.Start(profile.MemProfile, profile.ProfilePath(fmt.Sprintf("./%s_%d_%d/", m.currentBenchmark.algorithm, iterations, msgSize)))
 				m.lastId++
 				m.sentMessages++
-				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, m.currentBenchmark.message, m.currentBenchmark.algorithm)
+				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, &m.currentBenchmark.message, m.currentBenchmark.algorithm)
 				go func() {
 					time.Sleep(m.currentBenchmark.duration)
-					fmt.Printf("Total Iterations for %s msgSize=%d: %d\n", split[2], msgSize, m.sentMessages)
-					fmt.Printf("  Iterations/sec for %s msgSize=%d: %f\n\n", split[2], msgSize, float64(m.sentMessages)/float64(iterations))
+					fmt.Printf("Total Iterations for %s msgSize=%d: %d\n", m.currentBenchmark.algorithm, m.currentBenchmark.messageSize, m.sentMessages)
+					fmt.Printf("  Iterations/sec for %s msgSize=%d: %f\n\n", m.currentBenchmark.algorithm, m.currentBenchmark.messageSize, float64(m.sentMessages)/m.currentBenchmark.duration.Seconds())
 					//p.Stop()
 					m.currentBenchmark = nil
 					m.sentMessages = 0
@@ -141,21 +123,8 @@ func (m *controlModule) newIteration() {
 			} else {
 				m.lastId++
 				m.sentMessages++
-				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, m.currentBenchmark.message, m.currentBenchmark.algorithm)
+				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, &m.currentBenchmark.message, m.currentBenchmark.algorithm)
 			}
 		}()
 	}
 }
-
-//128 60 brb
-//256 60 brb
-//512 60 brb
-//1024 60 brb
-//2048 60 brb
-//4096 60 brb
-//8192 60 brb
-//16384 60 brb
-//32768 60 brb
-//32768 60 brb
-//65536 60 brb
-//131072 60 brb

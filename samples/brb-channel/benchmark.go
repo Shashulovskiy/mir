@@ -3,7 +3,8 @@ package main
 import "time"
 
 type Benchmark struct {
-	message   *[]byte
-	duration  time.Duration
-	algorithm string
+	messageSize int64
+	message     []byte
+	duration    time.Duration
+	algorithm   string
 }

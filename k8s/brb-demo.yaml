@@ -1,5 +1,3 @@
-{{ range $podIndex := until .Values.replicaCount -}}
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,9 +17,11 @@ spec:
     spec:
       containers:
         - name: brb-app
-          image: cr.yandex/crp5ffuolvl11ksq45o4/brb:v1
+          image: brb:v14
           env:
-            - name: POD_INDEX
-              value: "{{ $podIndex }}"
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
       imagePullSecrets:
         - name: imsecret
