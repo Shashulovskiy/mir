@@ -221,7 +221,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 				), params.AllNodes)
 			}
 
-			if currentState.readyMessagesReceived > params.GetF() && currentState.delivered == false {
+			if currentState.readyMessagesReceived > 2*params.GetF() && currentState.delivered == false {
 
 				err := encoder.Reconstruct(currentState.readys)
 				if err == nil {
@@ -231,8 +231,6 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 					output = output[4 : 4+size]
 
 					dsl.HashOneMessage(m, mc.Hasher, [][]byte{output}, &hashVerificationContext{id: id, output: output})
-				} else {
-					println(err.Error())
 				}
 			}
 		}
