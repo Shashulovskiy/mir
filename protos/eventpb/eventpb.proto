@@ -159,8 +159,9 @@ message MerkleBuildOrigin {
 
 message MerkleVerifyRequest {
   bytes root_hash = 1;
-  commonpb.MerklePath     proof = 2;
-  MerkleProofVerifyOrigin origin = 3;
+  bytes chunk = 2;
+  commonpb.MerklePath     proof = 3;
+  MerkleProofVerifyOrigin origin = 4;
 }
 
 message MerkleVerifyResult {

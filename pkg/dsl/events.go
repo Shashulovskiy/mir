@@ -130,7 +130,7 @@ func MerkleBuildRequest[C any](m Module, destModule t.ModuleID, messages [][]byt
 	EmitEvent(m, events.MerkleBuildRequest(destModule, messages, origin))
 }
 
-func MerkleProofVerifyRequest[C any](m Module, destModule t.ModuleID, rootHash []byte, proof *commonpb.MerklePath, context *C) {
+func MerkleProofVerifyRequest[C any](m Module, destModule t.ModuleID, rootHash, chunk []byte, proof *commonpb.MerklePath, context *C) {
 	contextID := m.DslHandle().StoreContext(context)
 
 	origin := &eventpb.MerkleProofVerifyOrigin{
@@ -142,7 +142,7 @@ func MerkleProofVerifyRequest[C any](m Module, destModule t.ModuleID, rootHash [
 		},
 	}
 
-	EmitEvent(m, events.MerkleProofVerifyRequest(destModule, rootHash, proof, origin))
+	EmitEvent(m, events.MerkleProofVerifyRequest(destModule, rootHash, chunk, proof, origin))
 }
 
 // HashOneMessage emits a request event to compute hash one message.

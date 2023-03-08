@@ -151,7 +151,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 
 			if !state[id].sentEcho {
 
-				dsl.MerkleProofVerifyRequest(m, mc.MerkleProofVerifier, rootHash, proof, &hashStartMessageContext{id: id, chunk: chunk, rootHash: rootHash, proof: proof})
+				dsl.MerkleProofVerifyRequest(m, mc.MerkleProofVerifier, rootHash, chunk, proof, &hashStartMessageContext{id: id, chunk: chunk, rootHash: rootHash, proof: proof})
 
 				return nil
 			} else {
@@ -188,7 +188,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			return err
 		}
 
-		dsl.MerkleProofVerifyRequest(m, mc.MerkleProofVerifier, rootHash, proof, &hashEchoMessageContext{id: id, fromId: fromId, chunk: chunk, rootHash: rootHash, proof: proof})
+		dsl.MerkleProofVerifyRequest(m, mc.MerkleProofVerifier, rootHash, chunk, proof, &hashEchoMessageContext{id: id, fromId: fromId, chunk: chunk, rootHash: rootHash, proof: proof})
 		return nil
 	})
 

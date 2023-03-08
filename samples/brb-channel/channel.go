@@ -248,7 +248,7 @@ func run() error {
 					},
 				})
 			} else {
-				panic("Unknown algorithm")
+				panic("Unknown algorithm " + algorithm)
 			}
 		},
 		func(bytes []byte) {

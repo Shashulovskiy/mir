@@ -150,11 +150,12 @@ func HashRequest(destModule t.ModuleID, data [][][]byte, origin *eventpb.HashOri
 	}
 }
 
-func MerkleProofVerifyRequest(destModule t.ModuleID, rootHash []byte, proof *commonpb.MerklePath, origin *eventpb.MerkleProofVerifyOrigin) *eventpb.Event {
+func MerkleProofVerifyRequest(destModule t.ModuleID, rootHash, chunk []byte, proof *commonpb.MerklePath, origin *eventpb.MerkleProofVerifyOrigin) *eventpb.Event {
 	return &eventpb.Event{
 		DestModule: destModule.Pb(),
 		Type: &eventpb.Event_MerkleVerifyRequest{MerkleVerifyRequest: &eventpb.MerkleVerifyRequest{
 			RootHash: rootHash,
+			Chunk:    chunk,
 			Proof:    proof,
 			Origin:   origin,
 		}},

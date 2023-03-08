@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
+	"github.com/filecoin-project/mir/pkg/pb/commonpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
+	merkle "github.com/wealdtech/go-merkletree"
 )
 
 type MerkleProofVerifier struct{}
@@ -24,6 +26,21 @@ func (m *MerkleProofVerifier) ApplyEvent(event *eventpb.Event) (*events.EventLis
 		// no actions on init
 		return events.EmptyList(), nil
 	case *eventpb.Event_MerkleBuildRequest:
+		tree, err := merkle.New(e.MerkleBuildRequest.Messages)
+		proofs := make([]*commonpb.MerklePath, 0)
+		if err != nil {
+			return nil, err
+		}
+		for _, message := range e.MerkleBuildRequest.Messages {
+			proof, err := tree.GenerateProof(message)
+			if err != nil {
+				return nil, err
+			}
+			proofs = append(proofs, &commonpb.MerklePath{
+				Hashes: proof.Hashes,
+				Index:  proof.Index,
+			})
+		}
 		//hashes := make([]*merkle.MerkleHash, len(e.MerkleBuildRequest.Messages))
 		//for i, msg := range e.MerkleBuildRequest.Messages {
 		//	hashes[i] = merkle.ComputeMerkleHash(msg)
@@ -46,28 +63,19 @@ func (m *MerkleProofVerifier) ApplyEvent(event *eventpb.Event) (*events.EventLis
 		//}
 		//tree.GetMerklePath()
 		return events.ListOf(
-		//events.MerkleBuildResult(t.ModuleID(e.MerkleBuildRequest.Origin.Module), (*tree.MerkleRoot)[:], paths, e.MerkleBuildRequest.Origin),
+			events.MerkleBuildResult(t.ModuleID(e.MerkleBuildRequest.Origin.Module), tree.Root(), proofs, e.MerkleBuildRequest.Origin),
 		), nil
 	case *eventpb.Event_MerkleVerifyRequest:
-		// TODO
-		//hashes := make([]*merkle.MerkleHash, len(e.MerkleVerifyRequest.Proof.Hashes))
-		//for i, hash := range e.MerkleVerifyRequest.Proof.Hashes {
-		//	hashes[i] = (*merkle.MerkleHash)(hash)
-		//}
-		//merklePath := merkle.MerklePath{
-		//	Hashes:    hashes,
-		//	ProofPath: e.MerkleVerifyRequest.Proof.Proof,
-		//}
-		//err := merklePath.Verify((*merkle.MerkleHash)(e.MerkleVerifyRequest.RootHash))
+		proof, err := merkle.VerifyProof(e.MerkleVerifyRequest.Chunk, &merkle.Proof{
+			Hashes: e.MerkleVerifyRequest.Proof.Hashes,
+			Index:  e.MerkleVerifyRequest.Proof.Index,
+		}, e.MerkleVerifyRequest.RootHash)
+		if err != nil {
+			return nil, err
+		}
 
-		//var result bool
-		//if err != nil {
-		//	result = false
-		//} else {
-		//	result = true
-		//}
 		return events.ListOf(
-			events.MerkleProofVerifyResult(t.ModuleID(e.MerkleVerifyRequest.Origin.Module), true, e.MerkleVerifyRequest.Origin),
+			events.MerkleProofVerifyResult(t.ModuleID(e.MerkleVerifyRequest.Origin.Module), proof, e.MerkleVerifyRequest.Origin),
 		), nil
 	default:
 		// Complain about all other incoming event types.

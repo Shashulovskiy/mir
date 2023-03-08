@@ -10,7 +10,7 @@ message HashData {
 
 message MerklePath {
   repeated bytes hashes = 1;
-  bytes proof = 2;
+  uint64 index = 2;
 }
 
 message StateSnapshot {

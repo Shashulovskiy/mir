@@ -98,6 +98,9 @@ func (m *controlModule) newIteration() {
 	if m.isLeader {
 		go func() {
 			if m.currentBenchmark == nil {
+				if m.lastTest >= len(m.tests) {
+					return
+				}
 				test := m.tests[m.lastTest]
 				m.lastTest++
 				data := make([]byte, test.messageSize)
