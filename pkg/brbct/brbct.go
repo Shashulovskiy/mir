@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	"github.com/filecoin-project/mir/pkg/modules"
-	brbpbdsl "github.com/filecoin-project/mir/pkg/pb/brbctpb/dsl"
+	brbctpbdsl "github.com/filecoin-project/mir/pkg/pb/brbctpb/dsl"
 	brbmsgs "github.com/filecoin-project/mir/pkg/pb/brbctpb/msgs"
+	brbpbdsl "github.com/filecoin-project/mir/pkg/pb/brbpb/dsl"
 	"github.com/filecoin-project/mir/pkg/pb/commonpb"
 	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
 	t "github.com/filecoin-project/mir/pkg/types"
+	"github.com/filecoin-project/mir/pkg/util/mathutil"
 	rs "github.com/klauspost/reedsolomon"
 	"github.com/pkg/errors"
-	"math"
 	"strconv"
 )
 
@@ -57,16 +58,13 @@ func (params *ModuleParams) GetF() int {
 	return (params.GetN() - 1) / 3
 }
 
-type Accumulator = struct {
+type Accumulator struct {
 	value string
 	count int
 }
 
 // brbHashModuleState represents the state of the brb module.
 type brbHashModuleState struct {
-	// this variable is not part of the original protocol description, but it greatly simplifies the code
-	proposed []byte
-
 	sentEcho  bool
 	sentReady bool
 	delivered bool
@@ -101,24 +99,20 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			return fmt.Errorf("only the leader node can receive requests")
 		}
 
-		data := []byte{0, 0, 0, 0}
+		nDataShards := params.GetN() - 2*params.GetF()
+		nParityShards := 2 * params.GetF()
+
+		data := make([]byte, mathutil.Pad(4+len(hdata), nDataShards))
 		binary.LittleEndian.PutUint32(data, uint32(len(hdata)))
-		data = append(data, hdata...)
-
-		chunkSize := int(math.Ceil(float64(len(data)) / float64(params.GetN()-2*params.GetF())))
+		copy(data[4:], hdata)
+		shardSize := len(data) / nDataShards
 		encoded := make([][]byte, params.GetN())
-		for i := range encoded {
-			encoded[i] = make([]byte, chunkSize)
+		for i := 0; i < nDataShards; i++ {
+			encoded[i] = data[i*shardSize : (i+1)*shardSize]
 		}
-
-		for i, in := range encoded[:params.GetN()-2*params.GetF()] {
-			for j := range in {
-				if i*chunkSize+j < len(data) {
-					in[j] = data[i*chunkSize+j]
-				} else {
-					in[j] = 0
-				}
-			}
+		// allocate space for the parity shards
+		for i := 0; i < nParityShards; i++ {
+			encoded[nDataShards+i] = make([]byte, shardSize)
 		}
 
 		err := encoder.Encode(encoded)
@@ -142,12 +136,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	})
 
 	// -----------
-	brbpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
+	brbctpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
 		if id <= lastId {
 			return nil
 		}
 		if from == params.Leader {
-			initialize(&state, id)
+			initialize(state, id)
 
 			if !state[id].sentEcho {
 
@@ -177,11 +171,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 	})
 
-	brbpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
+	brbctpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
 		if id <= lastId {
 			return nil
 		}
-		initialize(&state, id)
+		initialize(state, id)
 
 		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
@@ -198,26 +192,30 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 		currentState := state[context.id]
 		if result {
-			updateAccumulator(
-				&currentState.echos,
-				&currentState.echoMessagesCount,
-				&currentState.echoMessagesAccumulator,
-				string(context.rootHash),
-				context.chunk,
-				context.fromId,
-				params,
-			)
+			accumulator := &currentState.echoMessagesAccumulator
+			hash := string(context.rootHash)
+			if _, ok := currentState.echos[hash]; !ok {
+				currentState.echos[hash] = make([][]byte, params.GetN())
+			}
+			if currentState.echos[hash][context.fromId] == nil {
+				currentState.echos[hash][context.fromId] = context.chunk
+				currentState.echoMessagesCount[hash]++
+				if currentState.echoMessagesCount[hash] > accumulator.count {
+					(*accumulator).count = currentState.echoMessagesCount[hash]
+					(*accumulator).value = hash
+				}
+			}
 			return nil
 		} else {
 			return fmt.Errorf("received invalid echo")
 		}
 	})
 
-	brbpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id int64, rootHash []byte) error {
+	brbctpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id int64, rootHash []byte) error {
 		if id <= lastId {
 			return nil
 		}
-		initialize(&state, id)
+		initialize(state, id)
 
 		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
@@ -259,7 +257,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 				eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, id, []byte(currentState.readyMessagesAccumulator.value)), params.AllNodes)
 			}
 
-			if currentState.readyMessagesAccumulator.count >= params.GetN()-params.GetF() && currentState.echoMessagesAccumulator.count > params.GetN()-2*params.GetF() && !currentState.delivered {
+			if currentState.readyMessagesAccumulator.count >= params.GetN()-params.GetF() && currentState.echoMessagesAccumulator.count >= params.GetN()-2*params.GetF() && !currentState.delivered {
 				currentState.delivered = true
 				decoded := make([][]byte, params.GetN())
 				for i := 0; i < params.GetN(); i++ {
@@ -275,11 +273,13 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 
 				size := binary.LittleEndian.Uint32(output[:4])
 				output = output[4 : 4+size]
+				brbpbdsl.Deliver(m, mc.Consumer, id, output)
 				if id > lastId {
+					for i := lastId; i <= id; i++ {
+						delete(state, i)
+					}
 					lastId = id
 				}
-				brbpbdsl.Deliver(m, mc.Consumer, id, output)
-				delete(state, id)
 			}
 		}
 		return nil
@@ -288,11 +288,9 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	return m, nil
 }
 
-func initialize(state *map[int64]*brbHashModuleState, id int64) {
-	if _, ok := (*state)[id]; !ok {
-		(*state)[id] = &brbHashModuleState{
-			proposed: nil,
-
+func initialize(state map[int64]*brbHashModuleState, id int64) {
+	if _, ok := state[id]; !ok {
+		state[id] = &brbHashModuleState{
 			sentEcho:                 false,
 			sentReady:                false,
 			delivered:                false,
@@ -302,20 +300,6 @@ func initialize(state *map[int64]*brbHashModuleState, id int64) {
 			readyMessagesCount:       make(map[string]int),
 			readyMessagesReceived:    make(map[string][]bool),
 			readyMessagesAccumulator: Accumulator{value: "", count: -1},
-		}
-	}
-}
-
-func updateAccumulator(values *map[string][][]byte, counter *map[string]int, accumulator *Accumulator, hash string, chunk []byte, id int64, params *ModuleParams) {
-	if _, ok := (*values)[hash]; !ok {
-		(*values)[hash] = make([][]byte, params.GetN())
-	}
-	if (*values)[hash][id] == nil {
-		(*values)[hash][id] = chunk
-		(*counter)[hash]++
-		if (*counter)[hash] > accumulator.count {
-			(*accumulator).count = (*counter)[hash]
-			(*accumulator).value = hash
 		}
 	}
 }

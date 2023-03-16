@@ -46,55 +46,45 @@ func (params *ModuleParams) GetF() int {
 	return (params.GetN() - 1) / 3
 }
 
-type MessageContent []byte
+type Accumulator struct {
+	data  []byte
+	count int
+}
 
 // brbModuleState represents the state of the brb module.
-type brbModuleState struct {
-	// this variable is not part of the original protocol description, but it greatly simplifies the code
-	request []byte
-
+type state struct {
 	sentEcho  bool
 	sentReady bool
 	delivered bool
 
-	echos               map[t.NodeID][]byte
+	echos               map[t.NodeID]bool
 	echoMessagesCount   map[string]int
-	echosMaxAccumulator struct {
-		MessageContent
-		int
-	}
+	echosMaxAccumulator Accumulator
 
-	readys              map[t.NodeID][]byte
+	readys              map[t.NodeID]bool
 	readyMessagesCount  map[string]int
-	readyMaxAccumulator struct {
-		MessageContent
-		int
-	}
+	readyMaxAccumulator Accumulator
 }
 
-func incrementAndUpdateAccumulator(message *[]byte, counts *map[string]int, accumulator *struct {
-	MessageContent
-	int
-}) {
-	// TODO cant store []byte in a map
-	var stringRepr = string(*message)
+type brbModuleState state
 
-	(*counts)[stringRepr]++
+func incrementAndUpdateAccumulator(message []byte, counts map[string]int, accumulator *Accumulator) {
+	var stringRepr = string(message)
 
-	if (*counts)[stringRepr] > (*accumulator).int {
-		(*accumulator).int = (*counts)[stringRepr]
-		(*accumulator).MessageContent = *message
+	counts[stringRepr]++
+
+	if counts[stringRepr] > (*accumulator).count {
+		(*accumulator).count = counts[stringRepr]
+		(*accumulator).data = message
 	}
 }
 
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.PassiveModule {
 	m := dsl.NewModule(mc.Self)
 
-	// upon event <brb, Init> do
 	state := make(map[int64]*brbModuleState)
 	lastId := int64(0)
 
-	// upon event <brb, Broadcast | m> do
 	brbpbdsl.UponBroadcastRequest(m, func(id int64, data []byte) error {
 		if id <= lastId {
 			return nil
@@ -102,8 +92,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.
 		if nodeID != params.Leader {
 			return fmt.Errorf("only the leader node can receive requests")
 		}
-		initialize(&state, id)
-		state[id].request = data
+		initialize(state, id)
 		eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.StartMessage(mc.Self, id, data), params.AllNodes)
 		return nil
 	})
@@ -113,7 +102,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.
 			return nil
 		}
 		if from == params.Leader {
-			initialize(&state, id)
+			initialize(state, id)
 			if state[id].sentEcho == false {
 				state[id].sentEcho = true
 				eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.EchoMessage(mc.Self, id, data), params.AllNodes)
@@ -130,11 +119,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.
 		if id <= lastId {
 			return nil
 		}
-		initialize(&state, id)
-		if state[id].echos[from] == nil {
-			state[id].echos[from] = data
+		initialize(state, id)
+		if _, ok := state[id].echos[from]; !ok {
+			state[id].echos[from] = true
 
-			incrementAndUpdateAccumulator(&data, &state[id].echoMessagesCount, &state[id].echosMaxAccumulator)
+			incrementAndUpdateAccumulator(data, state[id].echoMessagesCount, &state[id].echosMaxAccumulator)
 		}
 		return nil
 	})
@@ -143,11 +132,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.
 		if id <= lastId {
 			return nil
 		}
-		initialize(&state, id)
-		if state[id].readys[from] == nil {
-			state[id].readys[from] = data
+		initialize(state, id)
+		if _, ok := state[id].readys[from]; !ok {
+			state[id].readys[from] = true
 
-			incrementAndUpdateAccumulator(&data, &state[id].readyMessagesCount, &state[id].readyMaxAccumulator)
+			incrementAndUpdateAccumulator(data, state[id].readyMessagesCount, &state[id].readyMaxAccumulator)
 		}
 		return nil
 	})
@@ -157,18 +146,20 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.
 			if id <= lastId {
 				continue
 			}
-			if (currentState.echosMaxAccumulator.int > (params.GetN()+params.GetF())/2 || currentState.readyMaxAccumulator.int > params.GetF()) && currentState.sentReady == false {
+			if (currentState.echosMaxAccumulator.count > (params.GetN()+params.GetF())/2 || currentState.readyMaxAccumulator.count > params.GetF()) && currentState.sentReady == false {
 				currentState.sentReady = true
-				eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.ReadyMessage(mc.Self, id, currentState.echosMaxAccumulator.MessageContent), params.AllNodes)
+				eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.ReadyMessage(mc.Self, id, currentState.echosMaxAccumulator.data), params.AllNodes)
 			}
 
-			if currentState.readyMaxAccumulator.int > 2*params.GetF() && currentState.delivered == false {
+			if currentState.readyMaxAccumulator.count > 2*params.GetF() && currentState.delivered == false {
 				currentState.delivered = true
+				brbpbdsl.Deliver(m, mc.Consumer, id, currentState.readyMaxAccumulator.data)
 				if id > lastId {
+					for i := lastId; i <= id; i++ {
+						delete(state, i)
+					}
 					lastId = id
 				}
-				brbpbdsl.Deliver(m, mc.Consumer, id, currentState.readyMaxAccumulator.MessageContent)
-				delete(state, id)
 			}
 		}
 		return nil
@@ -177,26 +168,18 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) modules.
 	return m
 }
 
-func initialize(state *map[int64]*brbModuleState, id int64) {
-	if _, ok := (*state)[id]; !ok {
-		(*state)[id] = &brbModuleState{
-			request: nil,
-
-			sentEcho:          false,
-			sentReady:         false,
-			delivered:         false,
-			echos:             make(map[t.NodeID][]byte),
-			echoMessagesCount: make(map[string]int),
-			echosMaxAccumulator: struct {
-				MessageContent
-				int
-			}{MessageContent: nil, int: 0},
-			readys:             make(map[t.NodeID][]byte),
-			readyMessagesCount: make(map[string]int),
-			readyMaxAccumulator: struct {
-				MessageContent
-				int
-			}{MessageContent: nil, int: 0},
+func initialize(state map[int64]*brbModuleState, id int64) {
+	if _, ok := state[id]; !ok {
+		state[id] = &brbModuleState{
+			sentEcho:            false,
+			sentReady:           false,
+			delivered:           false,
+			echos:               make(map[t.NodeID]bool),
+			echoMessagesCount:   make(map[string]int),
+			echosMaxAccumulator: Accumulator{data: nil, count: 0},
+			readys:              make(map[t.NodeID]bool),
+			readyMessagesCount:  make(map[string]int),
+			readyMaxAccumulator: Accumulator{data: nil, count: 0},
 		}
 	}
 }

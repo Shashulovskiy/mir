@@ -8,11 +8,12 @@ import (
 	"github.com/filecoin-project/mir/pkg/modules"
 	brbdxrpbdsl "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/dsl"
 	brbdxrpbmsgs "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/msgs"
+	brbpbdsl "github.com/filecoin-project/mir/pkg/pb/brbpb/dsl"
 	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
 	t "github.com/filecoin-project/mir/pkg/types"
+	"github.com/filecoin-project/mir/pkg/util/mathutil"
 	rs "github.com/klauspost/reedsolomon"
 	"github.com/pkg/errors"
-	"math"
 	"strconv"
 )
 
@@ -54,42 +55,73 @@ func (params *ModuleParams) GetF() int {
 	return (params.GetN() - 1) / 3
 }
 
-type Accumulator = struct {
-	hash  *[]byte
-	chunk *[]byte
+type DualAccumulator struct {
+	hash  []byte
+	chunk []byte
 	count int
 }
 
-// brbDxrModuleState represents the state of the brb module.
-type brbDxrModuleState struct {
+type SingleAccumulator struct {
+	value []byte
+	count int
+}
+
+// moduleState represents the state of the brb module.
+type moduleState struct {
 	sentEcho  bool
 	sentReady bool
 	delivered bool
 
-	echos               [][]byte
-	echoMessagesCount   map[string]map[string]int
-	echosMaxAccumulator Accumulator
+	echos                 [][]byte
+	echoMessagesCount     map[string]map[string]int
+	echoAccumulatorByHash map[string]*SingleAccumulator
+	echosMaxAccumulator   DualAccumulator
 
 	readys                [][]byte
-	readyMessagesCount    map[string]map[string]int
+	readyMessagesCount    map[string]int
 	readyMessagesReceived int
-	readyMaxAccumulator   Accumulator
+	readyMaxAccumulator   SingleAccumulator
 }
 
-func incrementAndUpdateAccumulator(hash, chunk *[]byte, counts *map[string]map[string]int, accumulator *Accumulator) {
-	hashString := string(*hash)
-	chunkString := string(*chunk)
+func incrementAndUpdateEchoAccumulator(hash, chunk []byte, counts map[string]map[string]int, byHash map[string]*SingleAccumulator, accumulator *DualAccumulator) {
+	hashString := string(hash)
+	chunkString := string(chunk)
 
-	if _, ok := (*counts)[hashString]; !ok {
-		(*counts)[hashString] = make(map[string]int)
+	if _, ok := counts[hashString]; !ok {
+		counts[hashString] = make(map[string]int)
 	}
 
-	(*counts)[hashString][chunkString]++
+	if _, ok := byHash[hashString]; !ok {
+		byHash[hashString] = &SingleAccumulator{}
+	}
 
-	if (*counts)[hashString][chunkString] > (*accumulator).count {
-		(*accumulator).count = (*counts)[hashString][chunkString]
+	counts[hashString][chunkString]++
+
+	if counts[hashString][chunkString] > (*accumulator).count {
+		(*accumulator).count = counts[hashString][chunkString]
 		(*accumulator).hash = hash
 		(*accumulator).chunk = chunk
+	}
+
+	if counts[hashString][chunkString] > byHash[hashString].count {
+		byHash[hashString].count = counts[hashString][chunkString]
+		byHash[hashString].value = chunk
+	}
+}
+
+func incrementAndUpdateReadyAccumulator(hash []byte, counts map[string]int, accumulator *SingleAccumulator) {
+	hashString := string(hash)
+
+	if _, ok := counts[hashString]; !ok {
+		// TODO necessary?
+		counts[hashString] = 0
+	}
+
+	counts[hashString]++
+
+	if counts[hashString] > (*accumulator).count {
+		(*accumulator).count = counts[hashString]
+		(*accumulator).value = hash
 	}
 }
 
@@ -102,11 +134,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		return nil, errors.Wrap(err, "Unable to create coder")
 	}
 
-	state := make(map[int64]*brbDxrModuleState)
+	state := make(map[int64]*moduleState)
 	lastId := int64(0)
 
 	// upon event <brb, Broadcast | m> do
-	brbdxrpbdsl.UponBroadcastRequest(m, func(id int64, data []byte) error {
+	brbpbdsl.UponBroadcastRequest(m, func(id int64, data []byte) error {
 		if nodeID != params.Leader {
 			return fmt.Errorf("only the leader node can receive requests")
 		}
@@ -124,9 +156,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			if !state[id].sentEcho {
 				state[id].sentEcho = true
 
-				data := []byte{0, 0, 0, 0}
+				nDataShards := params.GetN() - 2*params.GetF()
+
+				data := make([]byte, mathutil.Pad(4+len(hdata), nDataShards))
 				binary.LittleEndian.PutUint32(data, uint32(len(hdata)))
-				data = append(data, hdata...)
+				copy(data[4:], hdata)
 
 				dsl.HashOneMessage(m, mc.Hasher, [][]byte{hdata}, &hashInitialMessageContext{id: id, data: data})
 				return nil
@@ -139,24 +173,23 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 	})
 
-	dsl.UponHashResult(m, func(hashes [][]byte, context *hashInitialMessageContext) error {
+	dsl.UponOneHashResult(m, func(hash []byte,
+		context *hashInitialMessageContext) error {
 		if context.id <= lastId {
 			return nil
 		}
-		chunkSize := int(math.Ceil(float64(len(context.data)) / float64(params.GetN()-2*params.GetF())))
-		encoded := make([][]byte, params.GetN())
-		for i := range encoded {
-			encoded[i] = make([]byte, chunkSize)
-		}
 
-		for i, in := range encoded[:params.GetN()-2*params.GetF()] {
-			for j := range in {
-				if i*chunkSize+j < len(context.data) {
-					in[j] = context.data[i*chunkSize+j]
-				} else {
-					in[j] = 0
-				}
-			}
+		nDataShards := params.GetN() - 2*params.GetF()
+		nParityShards := 2 * params.GetF()
+
+		shardSize := len(context.data) / nDataShards
+		encoded := make([][]byte, params.GetN())
+		for i := 0; i < nDataShards; i++ {
+			encoded[i] = context.data[i*shardSize : (i+1)*shardSize]
+		}
+		// allocate space for the parity shards
+		for i := 0; i < nParityShards; i++ {
+			encoded[nDataShards+i] = make([]byte, shardSize)
 		}
 
 		err := encoder.Encode(encoded)
@@ -166,7 +199,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 
 		for i, node := range params.AllNodes {
-			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, hashes[0], encoded[i]), []t.NodeID{node})
+			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, hash, encoded[i]), []t.NodeID{node})
 		}
 		return nil
 	})
@@ -183,7 +216,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if state[id].echos[fromId] == nil {
 			state[id].echos[fromId] = chunk
 
-			incrementAndUpdateAccumulator(&hash, &chunk, &state[id].echoMessagesCount, &state[id].echosMaxAccumulator)
+			incrementAndUpdateEchoAccumulator(hash, chunk, state[id].echoMessagesCount, state[id].echoAccumulatorByHash, &state[id].echosMaxAccumulator)
 		}
 		return nil
 	})
@@ -201,7 +234,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			state[id].readys[fromId] = chunk
 			state[id].readyMessagesReceived += 1
 
-			incrementAndUpdateAccumulator(&hash, &chunk, &state[id].readyMessagesCount, &state[id].readyMaxAccumulator)
+			incrementAndUpdateReadyAccumulator(hash, state[id].readyMessagesCount, &state[id].readyMaxAccumulator)
 		}
 		return nil
 	})
@@ -211,16 +244,31 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			if id <= lastId {
 				continue
 			}
-			if (currentState.echosMaxAccumulator.count > (params.GetN()+params.GetF())/2 ||
-				currentState.readyMaxAccumulator.count > params.GetF()) && currentState.sentReady == false {
 
+			// upon receiving 2t + 1 ⟨ECHO,m_i,h⟩ matching messages and not having
+			// sent a READY message do
+			if (currentState.echosMaxAccumulator.count > (params.GetN()+params.GetF())/2) && currentState.sentReady == false {
 				currentState.sentReady = true
 				eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.ReadyMessage(
-					mc.Self, id, *currentState.echosMaxAccumulator.hash,
-					*currentState.echosMaxAccumulator.chunk,
+					mc.Self, id, currentState.echosMaxAccumulator.hash,
+					currentState.echosMaxAccumulator.chunk,
 				), params.AllNodes)
 			}
 
+			// upon receiving t + 1 ⟨READY, *, h⟩ messages and not having sent a
+			// READY message do
+			if currentState.readyMaxAccumulator.count > params.GetF() && currentState.sentReady == false {
+				// Wait for t + 1 matching ⟨ECHO,m_i,h⟩
+				accumulator := currentState.echoAccumulatorByHash[string(currentState.readyMaxAccumulator.value)]
+				if accumulator.count > params.GetF() {
+					eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.ReadyMessage(
+						mc.Self, id, currentState.readyMaxAccumulator.value,
+						accumulator.value,
+					), params.AllNodes)
+				}
+			}
+
+			// Online error correction
 			if currentState.readyMessagesReceived > 2*params.GetF() && currentState.delivered == false {
 
 				err := encoder.Reconstruct(currentState.readys)
@@ -237,19 +285,21 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		return nil
 	})
 
-	dsl.UponHashResult(m, func(hashes [][]byte, context *hashVerificationContext) error {
+	dsl.UponOneHashResult(m, func(hash []byte, context *hashVerificationContext) error {
 		if context.id <= lastId {
 			return nil
 		}
 		currentState := state[context.id]
-		if bytes.Equal(hashes[0], *currentState.readyMaxAccumulator.hash) {
+		if bytes.Equal(hash, currentState.readyMaxAccumulator.value) {
 			if !currentState.delivered {
 				currentState.delivered = true
+				brbpbdsl.Deliver(m, mc.Consumer, context.id, context.output)
 				if context.id > lastId {
+					for i := lastId; i <= context.id; i++ {
+						delete(state, i)
+					}
 					lastId = context.id
 				}
-				brbdxrpbdsl.Deliver(m, mc.Consumer, context.id, context.output)
-				delete(state, context.id)
 			}
 		} else {
 			panic("?")
@@ -261,19 +311,20 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	return m, nil
 }
 
-func initialize(state *map[int64]*brbDxrModuleState, id int64, n int) {
+func initialize(state *map[int64]*moduleState, id int64, n int) {
 	if _, ok := (*state)[id]; !ok {
-		(*state)[id] = &brbDxrModuleState{
+		(*state)[id] = &moduleState{
 			sentEcho:              false,
 			sentReady:             false,
 			delivered:             false,
 			echos:                 make([][]byte, n),
 			echoMessagesCount:     make(map[string]map[string]int),
-			echosMaxAccumulator:   Accumulator{},
+			echoAccumulatorByHash: make(map[string]*SingleAccumulator),
+			echosMaxAccumulator:   DualAccumulator{},
 			readys:                make([][]byte, n),
-			readyMessagesCount:    make(map[string]map[string]int),
+			readyMessagesCount:    make(map[string]int),
 			readyMessagesReceived: 0,
-			readyMaxAccumulator:   Accumulator{},
+			readyMaxAccumulator:   SingleAccumulator{},
 		}
 	}
 }

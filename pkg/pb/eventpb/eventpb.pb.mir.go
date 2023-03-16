@@ -46,8 +46,6 @@ func (*Event) ReflectTypeOptions() []reflect.Type {
 		reflect.TypeOf((*Event_SbEvent)(nil)),
 		reflect.TypeOf((*Event_NewLogFile)(nil)),
 		reflect.TypeOf((*Event_Brb)(nil)),
-		reflect.TypeOf((*Event_Brbdxr)(nil)),
-		reflect.TypeOf((*Event_Brbct)(nil)),
 		reflect.TypeOf((*Event_MerkleBuildRequest)(nil)),
 		reflect.TypeOf((*Event_MerkleBuildResult)(nil)),
 		reflect.TypeOf((*Event_MerkleVerifyRequest)(nil)),

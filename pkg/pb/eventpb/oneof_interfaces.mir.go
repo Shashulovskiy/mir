@@ -5,8 +5,6 @@ import (
 	batchdbpb "github.com/filecoin-project/mir/pkg/pb/availabilitypb/batchdbpb"
 	batchfetcherpb "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb"
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
-	brbctpb "github.com/filecoin-project/mir/pkg/pb/brbctpb"
-	brbdxrpb "github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	brbpb "github.com/filecoin-project/mir/pkg/pb/brbpb"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
 	contextstorepb "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
@@ -185,14 +183,6 @@ func (w *Event_NewLogFile) Unwrap() *NewLogFile {
 
 func (w *Event_Brb) Unwrap() *brbpb.Event {
 	return w.Brb
-}
-
-func (w *Event_Brbdxr) Unwrap() *brbdxrpb.Event {
-	return w.Brbdxr
-}
-
-func (w *Event_Brbct) Unwrap() *brbctpb.Event {
-	return w.Brbct
 }
 
 func (w *Event_MerkleBuildRequest) Unwrap() *MerkleBuildRequest {

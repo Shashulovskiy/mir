@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
-	"github.com/filecoin-project/mir/pkg/pb/brbctpb"
-	"github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	"github.com/filecoin-project/mir/pkg/pb/brbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	"time"
@@ -45,30 +43,6 @@ func (m *controlModule) ApplyEvents(ctx context.Context, events *events.EventLis
 
 		case *eventpb.Event_Init:
 			m.newIteration()
-
-		case *eventpb.Event_Brbct:
-			brbEvent := event.Type.(*eventpb.Event_Brbct).Brbct
-			switch brbEvent.Type.(type) {
-
-			case *brbctpb.Event_Deliver:
-				deliverEvent := brbEvent.Type.(*brbctpb.Event_Deliver).Deliver
-				m.broadcastDeliverValidator(deliverEvent.Data)
-				m.newIteration()
-			default:
-				return fmt.Errorf("unknown brb event type: %T", brbEvent.Type)
-			}
-
-		case *eventpb.Event_Brbdxr:
-			brbEvent := event.Type.(*eventpb.Event_Brbdxr).Brbdxr
-			switch brbEvent.Type.(type) {
-
-			case *brbdxrpb.Event_Deliver:
-				deliverEvent := brbEvent.Type.(*brbdxrpb.Event_Deliver).Deliver
-				m.broadcastDeliverValidator(deliverEvent.Data)
-				m.newIteration()
-			default:
-				return fmt.Errorf("unknown brb event type: %T", brbEvent.Type)
-			}
 
 		case *eventpb.Event_Brb:
 			brbEvent := event.Type.(*eventpb.Event_Brb).Brb

@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto"
 	"fmt"
-	"github.com/filecoin-project/mir/pkg/brbct"
+	"github.com/filecoin-project/mir/pkg/brbdxr"
 	"github.com/filecoin-project/mir/pkg/merkletree"
 	"os"
 
@@ -89,16 +89,16 @@ func run() error {
 
 	merkle := merkletree.NewVerifier()
 
-	brbModule, err := brbct.NewModule(
-		&brbct.ModuleConfig{
-			Self:                "brbct",
-			Consumer:            "control",
-			Net:                 "net",
-			Crypto:              "crypto",
-			Hasher:              "hasher",
-			MerkleProofVerifier: "merkle",
+	brbModule, err := brbdxr.NewModule(
+		&brbdxr.ModuleConfig{
+			Self:     "brbdxr",
+			Consumer: "control",
+			Net:      "net",
+			Crypto:   "crypto",
+			Hasher:   "hasher",
+			//MerkleProofVerifier: "merkle",
 		},
-		&brbct.ModuleParams{
+		&brbdxr.ModuleParams{
 			InstanceUID: []byte("testing instance"),
 			AllNodes:    nodeIDs,
 			Leader:      nodeIDs[leaderNode],
@@ -117,7 +117,7 @@ func run() error {
 	m := map[t.ModuleID]modules.Module{
 		"net":     transportModule,
 		"crypto":  mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
-		"brbct":   brbModule,
+		"brbdxr":  brbModule,
 		"control": control,
 		"hasher":  hasher,
 		"merkle":  merkle,

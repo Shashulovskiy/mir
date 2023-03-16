@@ -15,8 +15,6 @@ import (
 	"github.com/filecoin-project/mir/pkg/merkletree"
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/net/grpc"
-	"github.com/filecoin-project/mir/pkg/pb/brbctpb"
-	"github.com/filecoin-project/mir/pkg/pb/brbdxrpb"
 	"github.com/filecoin-project/mir/pkg/pb/brbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
@@ -205,51 +203,19 @@ func run() error {
 	control := newControlModule(
 		/*isLeader=*/ ownID == nodeIDs[leaderNode],
 		func(id int64, message *[]byte, algorithm string) *events.EventList {
-			if algorithm == "brbdxr" {
-				return events.ListOf(&eventpb.Event{
-					DestModule: "brbdxr",
-					Type: &eventpb.Event_Brbdxr{
-						Brbdxr: &brbdxrpb.Event{
-							Type: &brbdxrpb.Event_Request{
-								Request: &brbdxrpb.BroadcastRequest{
-									Id:   id,
-									Data: *message,
-								},
+			return events.ListOf(&eventpb.Event{
+				DestModule: algorithm,
+				Type: &eventpb.Event_Brb{
+					Brb: &brbpb.Event{
+						Type: &brbpb.Event_Request{
+							Request: &brbpb.BroadcastRequest{
+								Id:   id,
+								Data: *message,
 							},
 						},
 					},
-				})
-			} else if algorithm == "brbct" {
-				return events.ListOf(&eventpb.Event{
-					DestModule: "brbct",
-					Type: &eventpb.Event_Brbct{
-						Brbct: &brbctpb.Event{
-							Type: &brbctpb.Event_Request{
-								Request: &brbctpb.BroadcastRequest{
-									Id:   id,
-									Data: *message,
-								},
-							},
-						},
-					},
-				})
-			} else if algorithm == "brb" {
-				return events.ListOf(&eventpb.Event{
-					DestModule: "brb",
-					Type: &eventpb.Event_Brb{
-						Brb: &brbpb.Event{
-							Type: &brbpb.Event_Request{
-								Request: &brbpb.BroadcastRequest{
-									Id:   id,
-									Data: *message,
-								},
-							},
-						},
-					},
-				})
-			} else {
-				panic("Unknown algorithm " + algorithm)
-			}
+				},
+			})
 		},
 		func(bytes []byte) {
 			counter++
