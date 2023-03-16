@@ -1,6 +1,8 @@
 package merkletree
 
 import (
+	"crypto"
+	_ "crypto/sha1"
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
@@ -10,10 +12,27 @@ import (
 	merkle "github.com/wealdtech/go-merkletree"
 )
 
-type MerkleProofVerifier struct{}
+type MerkleProofVerifier struct {
+	hashImpl *HashImpl
+}
 
 func NewVerifier() *MerkleProofVerifier {
-	return &MerkleProofVerifier{}
+	return &MerkleProofVerifier{
+		hashImpl: &HashImpl{
+			hasher: crypto.SHA1,
+		},
+	}
+}
+
+type HashImpl struct {
+	hasher crypto.Hash
+}
+
+func (h *HashImpl) Hash(data []byte) []byte {
+	hs := h.hasher.New()
+	hs.Write(data)
+	hash := hs.Sum(nil)
+	return hash
 }
 
 func (m *MerkleProofVerifier) ApplyEvents(eventsIn *events.EventList) (*events.EventList, error) {
@@ -26,7 +45,7 @@ func (m *MerkleProofVerifier) ApplyEvent(event *eventpb.Event) (*events.EventLis
 		// no actions on init
 		return events.EmptyList(), nil
 	case *eventpb.Event_MerkleBuildRequest:
-		tree, err := merkle.New(e.MerkleBuildRequest.Messages)
+		tree, err := merkle.NewUsing(e.MerkleBuildRequest.Messages, m.hashImpl, nil)
 		proofs := make([]*commonpb.MerklePath, 0)
 		if err != nil {
 			return nil, err
@@ -41,35 +60,14 @@ func (m *MerkleProofVerifier) ApplyEvent(event *eventpb.Event) (*events.EventLis
 				Index:  proof.Index,
 			})
 		}
-		//hashes := make([]*merkle.MerkleHash, len(e.MerkleBuildRequest.Messages))
-		//for i, msg := range e.MerkleBuildRequest.Messages {
-		//	hashes[i] = merkle.ComputeMerkleHash(msg)
-		//}
-		//tree := merkle.NewFullMerkleTree(hashes...)
-		//paths := make([]*commonpb.MerklePath, len(e.MerkleBuildRequest.Messages))
-		//for i, hash := range hashes {
-		//	path, err := tree.GetMerklePath(hash)
-		//	if err != nil {
-		//		return nil, errors.Wrap(err, "Unexpected hash")
-		//	}
-		//	tmp := make([][]byte, len(path.Hashes))
-		//	for j, h := range path.Hashes {
-		//		tmp[j] = (*h)[:]
-		//	}
-		//	paths[i] = &commonpb.MerklePath{
-		//		Hashes: tmp,
-		//		Proof:  path.ProofPath,
-		//	}
-		//}
-		//tree.GetMerklePath()
 		return events.ListOf(
 			events.MerkleBuildResult(t.ModuleID(e.MerkleBuildRequest.Origin.Module), tree.Root(), proofs, e.MerkleBuildRequest.Origin),
 		), nil
 	case *eventpb.Event_MerkleVerifyRequest:
-		proof, err := merkle.VerifyProof(e.MerkleVerifyRequest.Chunk, &merkle.Proof{
+		proof, err := merkle.VerifyProofUsing(e.MerkleVerifyRequest.Chunk, &merkle.Proof{
 			Hashes: e.MerkleVerifyRequest.Proof.Hashes,
 			Index:  e.MerkleVerifyRequest.Proof.Index,
-		}, e.MerkleVerifyRequest.RootHash)
+		}, e.MerkleVerifyRequest.RootHash, m.hashImpl, nil)
 		if err != nil {
 			return nil, err
 		}

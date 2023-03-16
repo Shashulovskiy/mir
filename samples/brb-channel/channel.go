@@ -142,8 +142,8 @@ func run() error {
 	}
 	transportModule.Connect(nodeAddrs)
 
-	merkle := merkletree.NewVerifier()
 	hasher := mirCrypto.NewHasher(crypto.SHA1)
+	merkle := merkletree.NewVerifier()
 
 	brbBrachaModule := brb.NewModule(
 		&brb.ModuleConfig{
