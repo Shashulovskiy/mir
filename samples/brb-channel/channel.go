@@ -43,6 +43,8 @@ type parsedArgs struct {
 
 	// If set, print trace output to stdout.
 	Trace bool
+
+	ByzantineBehavior string
 }
 
 func main() {
@@ -86,6 +88,7 @@ func run() error {
 	fmt.Printf("Self IP: %s\n", thisIp)
 
 	var ownID t.NodeID
+	var byzantine bool
 
 	// print the IP addresses of all nodes
 	for _, node := range nodes.Items {
@@ -95,15 +98,6 @@ func run() error {
 
 	slices.Sort(ips)
 
-	for i, ip := range ips {
-		if ip == thisIp {
-			ownID = t.NewNodeIDFromInt(i)
-		}
-	}
-
-	fmt.Printf("Own ID: %s\n", ownID)
-
-	println("Node starting..")
 	args := parseArgs(os.Args)
 	// Initialize logger that will be used throughout the code to print log messages.
 	var logger logging.Logger
@@ -113,6 +107,29 @@ func run() error {
 		logger = logging.ConsoleDebugLogger // Print debug-level info in verbose mode.
 	} else {
 		logger = logging.ConsoleWarnLogger // Only print errors and warnings by default.
+	}
+
+	for i, ip := range ips {
+		if ip == thisIp {
+			ownID = t.NewNodeIDFromInt(i)
+			if i >= len(ips)-len(ips)/3 && args.ByzantineBehavior != "none" {
+				byzantine = true
+				fmt.Printf("Enabling byzantine behavior\n")
+			} else {
+				byzantine = false
+				fmt.Printf("Disabling byzantine behavior\n")
+			}
+		}
+	}
+
+	fmt.Printf("Own ID: %s\n", ownID)
+
+	println("Node starting..")
+
+	if args.ByzantineBehavior != "none" {
+		fmt.Printf("Byzantine behavior in system: %s\n", args.ByzantineBehavior)
+	} else {
+		fmt.Println("No byzantine behavior in system")
 	}
 
 	tests := parseTests(args.testFile)
@@ -145,54 +162,9 @@ func run() error {
 	hasher := mirCrypto.NewHasher(crypto.SHA1)
 	merkle := merkletree.NewVerifier()
 
-	brbBrachaModule := brb.NewModule(
-		&brb.ModuleConfig{
-			Self:     "brb",
-			Consumer: "control",
-			Net:      "net",
-			Crypto:   "crypto",
-		},
-		&brb.ModuleParams{
-			InstanceUID: []byte("testing instance"),
-			AllNodes:    nodeIDs,
-			Leader:      nodeIDs[leaderNode],
-		},
-		ownID,
-	)
-
-	brbCtModule, err := brbct.NewModule(
-		&brbct.ModuleConfig{
-			Self:                "brbct",
-			Consumer:            "control",
-			Net:                 "net",
-			Crypto:              "crypto",
-			Hasher:              "hasher",
-			MerkleProofVerifier: "merkle",
-		},
-		&brbct.ModuleParams{
-			InstanceUID: []byte("testing instance"),
-			AllNodes:    nodeIDs,
-			Leader:      nodeIDs[leaderNode],
-		},
-		ownID,
-	)
-
-	brbDxrModule, err := brbdxr.NewModule(
-		&brbdxr.ModuleConfig{
-			Self:     "brbdxr",
-			Consumer: "control",
-			Net:      "net",
-			Crypto:   "crypto",
-			Hasher:   "hasher",
-			//MerkleProofVerifier: "merkle",
-		},
-		&brbdxr.ModuleParams{
-			InstanceUID: []byte("testing instance"),
-			AllNodes:    nodeIDs,
-			Leader:      nodeIDs[leaderNode],
-		},
-		ownID,
-	)
+	brbBrachaModule := configureBracha(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
+	brbCtModule, err := configureCT(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
+	brbDxrModule, err := configureDXR(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
 
 	if err != nil {
 		return nil
@@ -223,11 +195,6 @@ func run() error {
 		tests,
 	)
 
-	go func() {
-		time.Sleep(time.Minute)
-		println(counter)
-	}()
-
 	m := map[t.ModuleID]modules.Module{
 		"net":     transportModule,
 		"crypto":  mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
@@ -254,20 +221,87 @@ func run() error {
 	return nil
 }
 
+func configureBracha(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, leaderNode int, ownID t.NodeID) modules.PassiveModule {
+	moduleConfig := &brb.ModuleConfig{
+		Self:     "brb",
+		Consumer: "control",
+		Net:      "net",
+		Crypto:   "crypto",
+	}
+	moduleParams := &brb.ModuleParams{
+		InstanceUID: []byte("testing instance"),
+		AllNodes:    nodeIDs,
+		Leader:      nodeIDs[leaderNode],
+	}
+	if byzantine {
+		return brb.NewByzantineModule(
+			moduleConfig,
+			moduleParams,
+			ownID,
+			byzantineStrategy)
+	} else {
+		return brb.NewModule(
+			moduleConfig,
+			moduleParams,
+			ownID,
+		)
+	}
+}
+
+func configureCT(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, leaderNode int, ownID t.NodeID) (modules.PassiveModule, error) {
+	return brbct.NewModule(
+		&brbct.ModuleConfig{
+			Self:                "brbct",
+			Consumer:            "control",
+			Net:                 "net",
+			Crypto:              "crypto",
+			Hasher:              "hasher",
+			MerkleProofVerifier: "merkle",
+		},
+		&brbct.ModuleParams{
+			InstanceUID: []byte("testing instance"),
+			AllNodes:    nodeIDs,
+			Leader:      nodeIDs[leaderNode],
+		},
+		ownID,
+	)
+}
+
+func configureDXR(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, leaderNode int, ownID t.NodeID) (modules.PassiveModule, error) {
+	return brbdxr.NewModule(
+		&brbdxr.ModuleConfig{
+			Self:     "brbdxr",
+			Consumer: "control",
+			Net:      "net",
+			Crypto:   "crypto",
+			Hasher:   "hasher",
+			//MerkleProofVerifier: "merkle",
+		},
+		&brbdxr.ModuleParams{
+			InstanceUID: []byte("testing instance"),
+			AllNodes:    nodeIDs,
+			Leader:      nodeIDs[leaderNode],
+		},
+		ownID,
+	)
+}
+
 func parseArgs(args []string) *parsedArgs {
 	app := kingpin.New("brb-channel", "BRB Chanel for continuously sending messages")
 	verbose := app.Flag("verbose", "Verbose mode.").Short('v').Bool()
 	trace := app.Flag("trace", "Very verbose mode.").Bool()
 	testFile := app.Arg("testFile", "File with tests").Required().String()
+	byzantineBehavior := app.Arg("byzantineBehavior", "Enable byzantine behavior").String()
 
 	if _, err := app.Parse(args[1:]); err != nil { // Skip args[0], which is the name of the program, not an argument.
 		app.FatalUsage("could not parse arguments: %v\n", err)
 	}
 
 	return &parsedArgs{
-		testFile: *testFile,
-		Verbose:  *verbose,
-		Trace:    *trace,
+		testFile:          *testFile,
+		Verbose:           *verbose,
+		Trace:             *trace,
+		ByzantineBehavior: *byzantineBehavior,
 	}
 }
 

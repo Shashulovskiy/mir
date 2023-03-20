@@ -12,8 +12,8 @@ import (
 	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
 	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/mathutil"
-	rs "github.com/klauspost/reedsolomon"
 	"github.com/pkg/errors"
+	rs "github.com/vivint/infectious"
 	"strconv"
 )
 
@@ -77,10 +77,10 @@ type moduleState struct {
 	echoAccumulatorByHash map[string]*SingleAccumulator
 	echosMaxAccumulator   DualAccumulator
 
-	readys                [][]byte
-	readyMessagesCount    map[string]int
-	readyMessagesReceived int
-	readyMaxAccumulator   SingleAccumulator
+	readys              []rs.Share
+	receivedReady       []bool
+	readyMessagesCount  map[string]int
+	readyMaxAccumulator SingleAccumulator
 }
 
 func incrementAndUpdateEchoAccumulator(hash, chunk []byte, counts map[string]map[string]int, byHash map[string]*SingleAccumulator, accumulator *DualAccumulator) {
@@ -128,7 +128,7 @@ func incrementAndUpdateReadyAccumulator(hash []byte, counts map[string]int, accu
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 	m := dsl.NewModule(mc.Self)
 
-	encoder, err := rs.New(params.GetN()-2*params.GetF(), 2*params.GetF())
+	encoder, err := rs.NewFEC(params.GetF(), params.GetN())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create coder")
@@ -180,19 +180,18 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 
 		nDataShards := params.GetN() - 2*params.GetF()
-		nParityShards := 2 * params.GetF()
-
 		shardSize := len(context.data) / nDataShards
+
 		encoded := make([][]byte, params.GetN())
-		for i := 0; i < nDataShards; i++ {
-			encoded[i] = context.data[i*shardSize : (i+1)*shardSize]
-		}
-		// allocate space for the parity shards
-		for i := 0; i < nParityShards; i++ {
-			encoded[nDataShards+i] = make([]byte, shardSize)
+
+		dataWithPadding := make([]byte, nDataShards*shardSize)
+		copy(dataWithPadding, context.data)
+
+		output := func(s rs.Share) {
+			encoded[s.Number] = s.Data
 		}
 
-		err := encoder.Encode(encoded)
+		err := encoder.Encode(dataWithPadding, output)
 
 		if err != nil {
 			return err
@@ -230,9 +229,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if err != nil {
 			return err
 		}
-		if state[id].readys[fromId] == nil {
-			state[id].readys[fromId] = chunk
-			state[id].readyMessagesReceived += 1
+		if !state[id].receivedReady[fromId] {
+			state[id].receivedReady[fromId] = true
+			state[id].readys = append(state[id].readys, rs.Share{
+				Number: int(fromId),
+				Data:   chunk,
+			})
 
 			incrementAndUpdateReadyAccumulator(hash, state[id].readyMessagesCount, &state[id].readyMaxAccumulator)
 		}
@@ -269,16 +271,15 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			}
 
 			// Online error correction
-			if currentState.readyMessagesReceived > 2*params.GetF() && currentState.delivered == false {
+			if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
 
-				err := encoder.Reconstruct(currentState.readys)
+				output := make([]byte, 0)
+				res, err := encoder.Decode(output, currentState.readys)
 				if err == nil {
-					output := bytes.Join(currentState.readys, []byte{})
+					size := binary.LittleEndian.Uint32(res[:4])
+					res = res[4 : 4+size]
 
-					size := binary.LittleEndian.Uint32(output[:4])
-					output = output[4 : 4+size]
-
-					dsl.HashOneMessage(m, mc.Hasher, [][]byte{output}, &hashVerificationContext{id: id, output: output})
+					dsl.HashOneMessage(m, mc.Hasher, [][]byte{res}, &hashVerificationContext{id: id, output: res})
 				}
 			}
 		}
@@ -321,9 +322,9 @@ func initialize(state *map[int64]*moduleState, id int64, n int) {
 			echoMessagesCount:     make(map[string]map[string]int),
 			echoAccumulatorByHash: make(map[string]*SingleAccumulator),
 			echosMaxAccumulator:   DualAccumulator{},
-			readys:                make([][]byte, n),
+			readys:                make([]rs.Share, 0),
+			receivedReady:         make([]bool, n),
 			readyMessagesCount:    make(map[string]int),
-			readyMessagesReceived: 0,
 			readyMaxAccumulator:   SingleAccumulator{},
 		}
 	}

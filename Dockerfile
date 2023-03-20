@@ -7,5 +7,6 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-CMD go run ./samples/brb-channel tests
+
+CMD go run ./samples/brb-channel tests none
 #CMD [". /node"]

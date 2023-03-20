@@ -1,7 +1,6 @@
 package brbct
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/dsl"
@@ -13,8 +12,8 @@ import (
 	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
 	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/mathutil"
-	rs "github.com/klauspost/reedsolomon"
 	"github.com/pkg/errors"
+	rs "github.com/vivint/infectious"
 	"strconv"
 )
 
@@ -69,7 +68,8 @@ type brbHashModuleState struct {
 	sentReady bool
 	delivered bool
 
-	echos                    map[string][][]byte
+	echos                    map[string][]rs.Share
+	receivedEcho             []bool
 	echoMessagesCount        map[string]int
 	echoMessagesAccumulator  Accumulator
 	readyMessagesReceived    map[string][]bool
@@ -80,7 +80,7 @@ type brbHashModuleState struct {
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 	m := dsl.NewModule(mc.Self)
 
-	encoder, err := rs.New(params.GetN()-2*params.GetF(), 2*params.GetF())
+	encoder, err := rs.NewFEC(params.GetF(), params.GetN())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create coder")
@@ -100,22 +100,24 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 
 		nDataShards := params.GetN() - 2*params.GetF()
-		nParityShards := 2 * params.GetF()
 
 		data := make([]byte, mathutil.Pad(4+len(hdata), nDataShards))
 		binary.LittleEndian.PutUint32(data, uint32(len(hdata)))
 		copy(data[4:], hdata)
+
 		shardSize := len(data) / nDataShards
+
 		encoded := make([][]byte, params.GetN())
-		for i := 0; i < nDataShards; i++ {
-			encoded[i] = data[i*shardSize : (i+1)*shardSize]
-		}
-		// allocate space for the parity shards
-		for i := 0; i < nParityShards; i++ {
-			encoded[nDataShards+i] = make([]byte, shardSize)
+
+		dataWithPadding := make([]byte, nDataShards*shardSize)
+		copy(dataWithPadding, data)
+
+		output := func(s rs.Share) {
+			encoded[s.Number] = s.Data
 		}
 
-		err := encoder.Encode(encoded)
+		err := encoder.Encode(dataWithPadding, output)
+
 		if err != nil {
 			return err
 		}
@@ -141,7 +143,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			return nil
 		}
 		if from == params.Leader {
-			initialize(state, id)
+			initialize(state, id, params.GetN())
 
 			if !state[id].sentEcho {
 
@@ -175,7 +177,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if id <= lastId {
 			return nil
 		}
-		initialize(state, id)
+		initialize(state, id, params.GetN())
 
 		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
@@ -194,11 +196,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if result {
 			accumulator := &currentState.echoMessagesAccumulator
 			hash := string(context.rootHash)
-			if _, ok := currentState.echos[hash]; !ok {
-				currentState.echos[hash] = make([][]byte, params.GetN())
-			}
-			if currentState.echos[hash][context.fromId] == nil {
-				currentState.echos[hash][context.fromId] = context.chunk
+			if !currentState.receivedEcho[context.fromId] {
+				currentState.echos[hash] = append(currentState.echos[hash], rs.Share{
+					Number: int(context.fromId),
+					Data:   context.chunk,
+				})
 				currentState.echoMessagesCount[hash]++
 				if currentState.echoMessagesCount[hash] > accumulator.count {
 					(*accumulator).count = currentState.echoMessagesCount[hash]
@@ -215,7 +217,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if id <= lastId {
 			return nil
 		}
-		initialize(state, id)
+		initialize(state, id, params.GetN())
 
 		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
@@ -259,17 +261,14 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 
 			if currentState.readyMessagesAccumulator.count >= params.GetN()-params.GetF() && currentState.echoMessagesAccumulator.count >= params.GetN()-2*params.GetF() && !currentState.delivered {
 				currentState.delivered = true
-				decoded := make([][]byte, params.GetN())
-				for i := 0; i < params.GetN(); i++ {
-					decoded[i] = currentState.echos[currentState.echoMessagesAccumulator.value][i]
-				}
 
-				err := encoder.Reconstruct(decoded)
+				output := make([]byte, len(currentState.echos[currentState.echoMessagesAccumulator.value][0].Data)*params.GetF())
+				err := encoder.Rebuild(currentState.echos[currentState.echoMessagesAccumulator.value], func(s rs.Share) {
+					copy(output[s.Number*len(s.Data):], s.Data)
+				})
 				if err != nil {
 					return err
 				}
-
-				output := bytes.Join(decoded, []byte{})
 
 				size := binary.LittleEndian.Uint32(output[:4])
 				output = output[4 : 4+size]
@@ -288,13 +287,14 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	return m, nil
 }
 
-func initialize(state map[int64]*brbHashModuleState, id int64) {
+func initialize(state map[int64]*brbHashModuleState, id int64, n int) {
 	if _, ok := state[id]; !ok {
 		state[id] = &brbHashModuleState{
 			sentEcho:                 false,
 			sentReady:                false,
 			delivered:                false,
-			echos:                    make(map[string][][]byte),
+			echos:                    make(map[string][]rs.Share),
+			receivedEcho:             make([]bool, n),
 			echoMessagesCount:        make(map[string]int),
 			echoMessagesAccumulator:  Accumulator{value: "", count: -1},
 			readyMessagesCount:       make(map[string]int),
