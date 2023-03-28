@@ -27,7 +27,7 @@ const (
 	nodeBasePort = 10000
 
 	// The number of nodes participating in the chat.
-	nodeNumber = 4
+	nodeNumber = 7
 
 	// The index of the leader node of BCB.
 	leaderNode = 0

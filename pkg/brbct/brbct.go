@@ -80,7 +80,7 @@ type brbHashModuleState struct {
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 	m := dsl.NewModule(mc.Self)
 
-	encoder, err := rs.NewFEC(params.GetF(), params.GetN())
+	encoder, err := rs.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create coder")
@@ -113,7 +113,8 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		copy(dataWithPadding, data)
 
 		output := func(s rs.Share) {
-			encoded[s.Number] = s.Data
+			encoded[s.Number] = make([]byte, len(s.Data))
+			copy(encoded[s.Number], s.Data)
 		}
 
 		err := encoder.Encode(dataWithPadding, output)
@@ -260,9 +261,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			}
 
 			if currentState.readyMessagesAccumulator.count >= params.GetN()-params.GetF() && currentState.echoMessagesAccumulator.count >= params.GetN()-2*params.GetF() && !currentState.delivered {
-				currentState.delivered = true
-
-				output := make([]byte, len(currentState.echos[currentState.echoMessagesAccumulator.value][0].Data)*params.GetF())
+				output := make([]byte, len(currentState.echos[currentState.echoMessagesAccumulator.value][0].Data)*(params.GetN()-2*params.GetF()))
 				err := encoder.Rebuild(currentState.echos[currentState.echoMessagesAccumulator.value], func(s rs.Share) {
 					copy(output[s.Number*len(s.Data):], s.Data)
 				})
@@ -271,6 +270,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 				}
 
 				size := binary.LittleEndian.Uint32(output[:4])
+				if size > uint32(len(output)) {
+					// FIXME
+					println("happened")
+					continue
+				}
+				currentState.delivered = true
 				output = output[4 : 4+size]
 				brbpbdsl.Deliver(m, mc.Consumer, id, output)
 				if id > lastId {

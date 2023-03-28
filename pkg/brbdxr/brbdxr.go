@@ -128,7 +128,7 @@ func incrementAndUpdateReadyAccumulator(hash []byte, counts map[string]int, accu
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 	m := dsl.NewModule(mc.Self)
 
-	encoder, err := rs.NewFEC(params.GetF(), params.GetN())
+	encoder, err := rs.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create coder")
@@ -188,7 +188,8 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		copy(dataWithPadding, context.data)
 
 		output := func(s rs.Share) {
-			encoded[s.Number] = s.Data
+			encoded[s.Number] = make([]byte, len(s.Data))
+			copy(encoded[s.Number], s.Data)
 		}
 
 		err := encoder.Encode(dataWithPadding, output)
