@@ -264,6 +264,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 				// Wait for t + 1 matching ⟨ECHO,m_i,h⟩
 				accumulator := currentState.echoAccumulatorByHash[string(currentState.readyMaxAccumulator.value)]
 				if accumulator.count > params.GetF() {
+					currentState.sentReady = true
 					eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.ReadyMessage(
 						mc.Self, id, currentState.readyMaxAccumulator.value,
 						accumulator.value,
@@ -273,7 +274,6 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 
 			// Online error correction
 			if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
-
 				output := make([]byte, 0)
 				res, err := encoder.Decode(output, currentState.readys)
 				if err == nil {
@@ -281,6 +281,8 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 					res = res[4 : 4+size]
 
 					dsl.HashOneMessage(m, mc.Hasher, [][]byte{res}, &hashVerificationContext{id: id, output: res})
+				} else {
+					fmt.Println("happened")
 				}
 			}
 		}
