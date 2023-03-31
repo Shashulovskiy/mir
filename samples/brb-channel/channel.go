@@ -249,41 +249,44 @@ func configureBracha(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeI
 }
 
 func configureCT(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, leaderNode int, ownID t.NodeID) (modules.PassiveModule, error) {
-	return brbct.NewModule(
-		&brbct.ModuleConfig{
-			Self:                "brbct",
-			Consumer:            "control",
-			Net:                 "net",
-			Crypto:              "crypto",
-			Hasher:              "hasher",
-			MerkleProofVerifier: "merkle",
-		},
-		&brbct.ModuleParams{
-			InstanceUID: []byte("testing instance"),
-			AllNodes:    nodeIDs,
-			Leader:      nodeIDs[leaderNode],
-		},
-		ownID,
-	)
+	moduleConfig := &brbct.ModuleConfig{
+		Self:                "brbct",
+		Consumer:            "control",
+		Net:                 "net",
+		Crypto:              "crypto",
+		Hasher:              "hasher",
+		MerkleProofVerifier: "merkle",
+	}
+	moduleParams := &brbct.ModuleParams{
+		InstanceUID: []byte("testing instance"),
+		AllNodes:    nodeIDs,
+		Leader:      nodeIDs[leaderNode],
+	}
+	if byzantine {
+		return brbct.NewByzantineModule(moduleConfig, moduleParams, ownID, byzantineStrategy)
+	} else {
+		return brbct.NewModule(moduleConfig, moduleParams, ownID)
+	}
 }
 
 func configureDXR(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, leaderNode int, ownID t.NodeID) (modules.PassiveModule, error) {
-	return brbdxr.NewModule(
-		&brbdxr.ModuleConfig{
-			Self:     "brbdxr",
-			Consumer: "control",
-			Net:      "net",
-			Crypto:   "crypto",
-			Hasher:   "hasher",
-			//MerkleProofVerifier: "merkle",
-		},
-		&brbdxr.ModuleParams{
-			InstanceUID: []byte("testing instance"),
-			AllNodes:    nodeIDs,
-			Leader:      nodeIDs[leaderNode],
-		},
-		ownID,
-	)
+	moduleConfig := &brbdxr.ModuleConfig{
+		Self:     "brbdxr",
+		Consumer: "control",
+		Net:      "net",
+		Crypto:   "crypto",
+		Hasher:   "hasher",
+	}
+	moduleParams := &brbdxr.ModuleParams{
+		InstanceUID: []byte("testing instance"),
+		AllNodes:    nodeIDs,
+		Leader:      nodeIDs[leaderNode],
+	}
+	if byzantine {
+		return brbdxr.NewByzantineModule(moduleConfig, moduleParams, ownID, byzantineStrategy)
+	} else {
+		return brbdxr.NewModule(moduleConfig, moduleParams, ownID)
+	}
 }
 
 func parseArgs(args []string) *parsedArgs {

@@ -58,14 +58,14 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 	brbpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id int64, data []byte) error {
 		return nil
 	})
-	
+
 	return m
 }
 
 func Corrupt(data []byte) []byte {
 	corrupted := make([]byte, len(data))
 	for _, i := range corrupted {
-		corrupted[i] = 42
+		corrupted[i] = 1
 	}
 
 	return corrupted

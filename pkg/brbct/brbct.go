@@ -152,10 +152,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 
 				return nil
 			} else {
-				return fmt.Errorf("already received start from leader")
+				//fmt.Println("already received start from leader")
+				return nil
 			}
 		}
-		return fmt.Errorf("received start message not from leader")
+		//fmt.Println("received start message not from leader")
+		return nil
 	})
 
 	dsl.MerkleProofVerifyResult(m, func(result bool, context *hashStartMessageContext) error {
@@ -170,7 +172,8 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 
 			return nil
 		} else {
-			return fmt.Errorf("received invalid chunk or already sent echo")
+			//fmt.Println("received invalid chunk or already sent echo")
+			return nil
 		}
 	})
 
@@ -198,6 +201,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			accumulator := &currentState.echoMessagesAccumulator
 			hash := string(context.rootHash)
 			if !currentState.receivedEcho[context.fromId] {
+				currentState.receivedEcho[context.fromId] = true
 				currentState.echos[hash] = append(currentState.echos[hash], rs.Share{
 					Number: int(context.fromId),
 					Data:   context.chunk,
@@ -210,7 +214,8 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			}
 			return nil
 		} else {
-			return fmt.Errorf("received invalid echo")
+			//fmt.Println("received invalid echo")
+			return nil
 		}
 	})
 
@@ -270,11 +275,6 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 				}
 
 				size := binary.LittleEndian.Uint32(output[:4])
-				if size > uint32(len(output)) {
-					// FIXME
-					println("happened")
-					continue
-				}
 				currentState.delivered = true
 				output = output[4 : 4+size]
 				brbpbdsl.Deliver(m, mc.Consumer, id, output)

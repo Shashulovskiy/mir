@@ -165,11 +165,13 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 				dsl.HashOneMessage(m, mc.Hasher, [][]byte{hdata}, &hashInitialMessageContext{id: id, data: data})
 				return nil
 			} else {
-				return fmt.Errorf("already sent echo")
+				//fmt.Println("already sent echo")
+				return nil
 			}
 
 		} else {
-			return fmt.Errorf("received start message not from leader")
+			//fmt.Println("received start message not from leader")
+			return nil
 		}
 	})
 
@@ -281,8 +283,6 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 					res = res[4 : 4+size]
 
 					dsl.HashOneMessage(m, mc.Hasher, [][]byte{res}, &hashVerificationContext{id: id, output: res})
-				} else {
-					fmt.Println("happened")
 				}
 			}
 		}
@@ -305,8 +305,6 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 					lastId = context.id
 				}
 			}
-		} else {
-			panic("?")
 		}
 
 		return nil
