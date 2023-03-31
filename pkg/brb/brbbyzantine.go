@@ -9,25 +9,29 @@ import (
 	t "github.com/filecoin-project/mir/pkg/types"
 )
 
+type byzantineModuleState struct {
+	sentEcho  bool
+	sentReady bool
+}
+
 func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID, strategy string) modules.PassiveModule {
 	m := dsl.NewModule(mc.Self)
 
-	brbpbdsl.UponBroadcastRequest(m, func(id int64, data []byte) error {
-		switch strategy {
-		case "ignore":
-			{
-				return nil
-			}
-		case "corrupt":
-			{
-
-				eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.StartMessage(mc.Self, id, Corrupt(data)), params.AllNodes)
-			}
-		}
-		return nil
-	})
+	lastId := int64(-1)
+	states := make(map[int64]*byzantineModuleState)
 
 	brbpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id int64, data []byte) error {
+		if id < lastId {
+			return nil
+		}
+		if id > lastId {
+			for i := id; i < lastId; i++ {
+				delete(states, i)
+			}
+			lastId = id
+		}
+		initializeByzantine(id, states)
+
 		switch strategy {
 		case "ignore":
 			{
@@ -35,13 +39,28 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 			}
 		case "corrupt":
 			{
-				eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.EchoMessage(mc.Self, id, Corrupt(data)), params.AllNodes)
+				if !states[id].sentEcho {
+					state := states[id]
+					state.sentEcho = true
+					eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.EchoMessage(mc.Self, id, Corrupt(data)), params.AllNodes)
+				}
 			}
 		}
 		return nil
 	})
 
 	brbpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id int64, data []byte) error {
+		if id < lastId {
+			return nil
+		}
+		if id > lastId {
+			for i := id; i < lastId; i++ {
+				delete(states, i)
+			}
+			lastId = id
+		}
+		initializeByzantine(id, states)
+
 		switch strategy {
 		case "ignore":
 			{
@@ -49,7 +68,11 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 			}
 		case "corrupt":
 			{
-				eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.ReadyMessage(mc.Self, id, Corrupt(data)), params.AllNodes)
+				if !states[id].sentReady {
+					state := states[id]
+					state.sentReady = true
+					eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.ReadyMessage(mc.Self, id, Corrupt(data)), params.AllNodes)
+				}
 			}
 		}
 		return nil
@@ -69,4 +92,13 @@ func Corrupt(data []byte) []byte {
 	}
 
 	return corrupted
+}
+
+func initializeByzantine(id int64, states map[int64]*byzantineModuleState) {
+	if _, ok := states[id]; !ok {
+		states[id] = &byzantineModuleState{
+			sentEcho:  false,
+			sentReady: false,
+		}
+	}
 }
