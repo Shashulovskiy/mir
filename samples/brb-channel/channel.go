@@ -112,7 +112,7 @@ func run() error {
 	for i, ip := range ips {
 		if ip == thisIp {
 			ownID = t.NewNodeIDFromInt(i)
-			if i >= len(ips)-len(ips)/3 && args.ByzantineBehavior != "none" {
+			if i > len(ips)-len(ips)/3 && args.ByzantineBehavior != "none" {
 				byzantine = true
 				fmt.Printf("Enabling byzantine behavior\n")
 			} else {
