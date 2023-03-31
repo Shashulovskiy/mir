@@ -50,10 +50,15 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 					data := make([]byte, mathutil.Pad(4+len(hdata), nDataShards))
 					shardSize := len(data) / nDataShards
 
-					eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, id, brb.Corrupt(hdata[:shardSize]), brb.Corrupt(hdata[:shardSize])), params.AllNodes)
+					dsl.HashOneMessage(m, mc.Hasher, [][]byte{hdata}, &hashMessageContext{id: id, toSend: hdata[:shardSize]})
 				}
 			}
 		}
+		return nil
+	})
+
+	dsl.UponOneHashResult(m, func(hash []byte, context *hashMessageContext) error {
+		eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, hash, context.toSend), params.AllNodes)
 		return nil
 	})
 
@@ -90,6 +95,11 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 	})
 
 	return m, nil
+}
+
+type hashMessageContext struct {
+	id     int64
+	toSend []byte
 }
 
 func initializeByzantine(id int64, states map[int64]*byzantineModuleState) {
