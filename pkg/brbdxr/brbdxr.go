@@ -277,7 +277,13 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			// Online error correction
 			if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
 				output := make([]byte, 0)
-				res, err := encoder.Decode(output, currentState.readys)
+
+				readys := make([]rs.Share, 0)
+				for _, rd := range currentState.readys {
+					readys = append(readys, rd.DeepCopy())
+				}
+
+				res, err := encoder.Decode(output, readys)
 				if err == nil {
 					size := binary.LittleEndian.Uint32(res[:4])
 					res = res[4 : 4+size]
