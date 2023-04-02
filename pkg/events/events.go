@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package events
 
 import (
+	"github.com/filecoin-project/mir/pkg/pb/codingpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/filecoin-project/mir/pkg/pb/availabilitypb"
@@ -158,6 +159,42 @@ func MerkleProofVerifyRequest(destModule t.ModuleID, rootHash, chunk []byte, pro
 			Chunk:    chunk,
 			Proof:    proof,
 			Origin:   origin,
+		}},
+	}
+}
+
+func EncodeRequest(destModule t.ModuleID, totalShards, dataShards int64, paddedData []byte, origin *codingpb.EncodeOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_EncodeRequest{EncodeRequest: &codingpb.EncodeRequest{
+			TotalShards: totalShards,
+			DataShards:  dataShards,
+			PaddedData:  paddedData,
+			Origin:      origin,
+		}},
+	}
+}
+
+func DecodeRequest(destModule t.ModuleID, totalShards, dataShards int64, shares []*codingpb.Share, origin *codingpb.DecodeOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_DecodeRequest{DecodeRequest: &codingpb.DecodeRequest{
+			TotalShards: totalShards,
+			DataShards:  dataShards,
+			Shares:      shares,
+			Origin:      origin,
+		}},
+	}
+}
+
+func RebuildRequest(destModule t.ModuleID, totalShards, dataShards int64, shares []*codingpb.Share, origin *codingpb.RebuildOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_RebuildRequest{RebuildRequest: &codingpb.RebuildRequest{
+			TotalShards: totalShards,
+			DataShards:  dataShards,
+			Shares:      shares,
+			Origin:      origin,
 		}},
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/filecoin-project/mir/pkg/brb"
 	"github.com/filecoin-project/mir/pkg/brbct"
 	"github.com/filecoin-project/mir/pkg/brbdxr"
+	"github.com/filecoin-project/mir/pkg/coding"
 	mirCrypto "github.com/filecoin-project/mir/pkg/crypto"
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/logging"
@@ -166,6 +167,10 @@ func run() error {
 	brbCtModule, err := configureCT(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
 	brbDxrModule, err := configureDXR(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
 
+	coder := coding.NewModule(&coding.ModuleConfig{
+		Self: "coder",
+	})
+
 	if err != nil {
 		return nil
 	}
@@ -204,6 +209,7 @@ func run() error {
 		"control": control,
 		"hasher":  hasher,
 		"merkle":  merkle,
+		"coder":   coder,
 	}
 
 	// create a Mir node
@@ -256,6 +262,7 @@ func configureCT(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, l
 		Crypto:              "crypto",
 		Hasher:              "hasher",
 		MerkleProofVerifier: "merkle",
+		Coder:               "coder",
 	}
 	moduleParams := &brbct.ModuleParams{
 		InstanceUID: []byte("testing instance"),
@@ -276,6 +283,7 @@ func configureDXR(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, 
 		Net:      "net",
 		Crypto:   "crypto",
 		Hasher:   "hasher",
+		Coder:    "coder",
 	}
 	moduleParams := &brbdxr.ModuleParams{
 		InstanceUID: []byte("testing instance"),

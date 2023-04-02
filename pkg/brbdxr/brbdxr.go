@@ -9,10 +9,10 @@ import (
 	brbdxrpbdsl "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/dsl"
 	brbdxrpbmsgs "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/msgs"
 	brbpbdsl "github.com/filecoin-project/mir/pkg/pb/brbpb/dsl"
+	"github.com/filecoin-project/mir/pkg/pb/codingpb"
 	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
 	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/mathutil"
-	"github.com/pkg/errors"
 	rs "github.com/vivint/infectious"
 	"strconv"
 )
@@ -24,6 +24,7 @@ type ModuleConfig struct {
 	Net      t.ModuleID
 	Crypto   t.ModuleID
 	Hasher   t.ModuleID
+	Coder    t.ModuleID
 }
 
 // DefaultModuleConfig returns a valid module config with default names for all modules.
@@ -34,6 +35,7 @@ func DefaultModuleConfig(consumer t.ModuleID) *ModuleConfig {
 		Net:      "net",
 		Crypto:   "crypto",
 		Hasher:   "hasher",
+		Coder:    "coder",
 	}
 }
 
@@ -128,12 +130,6 @@ func incrementAndUpdateReadyAccumulator(hash []byte, counts map[string]int, accu
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 	m := dsl.NewModule(mc.Self)
 
-	encoder, err := rs.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to create coder")
-	}
-
 	state := make(map[int64]*moduleState)
 	lastId := int64(0)
 
@@ -181,27 +177,16 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			return nil
 		}
 
-		nDataShards := params.GetN() - 2*params.GetF()
-		shardSize := len(context.data) / nDataShards
+		dsl.EncodeRequest(m, mc.Coder, int64(params.GetN()), int64(params.GetN()-2*params.GetF()), context.data, &encodeMessageContext{
+			id:   context.id,
+			hash: hash,
+		})
+		return nil
+	})
 
-		encoded := make([][]byte, params.GetN())
-
-		dataWithPadding := make([]byte, nDataShards*shardSize)
-		copy(dataWithPadding, context.data)
-
-		output := func(s rs.Share) {
-			encoded[s.Number] = make([]byte, len(s.Data))
-			copy(encoded[s.Number], s.Data)
-		}
-
-		err := encoder.Encode(dataWithPadding, output)
-
-		if err != nil {
-			return err
-		}
-
+	dsl.UponEncodeResult(m, func(encoded [][]uint8, context *encodeMessageContext) error {
 		for i, node := range params.AllNodes {
-			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, hash, encoded[i]), []t.NodeID{node})
+			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, context.hash, encoded[i]), []t.NodeID{node})
 		}
 		return nil
 	})
@@ -276,21 +261,29 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 
 			// Online error correction
 			if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
-				output := make([]byte, 0)
-
-				readys := make([]rs.Share, 0)
+				shares := make([]*codingpb.Share, 0)
 				for _, rd := range currentState.readys {
-					readys = append(readys, rd.DeepCopy())
+					shares = append(shares, &codingpb.Share{
+						Number: int64(rd.Number),
+						Chunk:  rd.Data,
+					})
 				}
 
-				res, err := encoder.Decode(output, readys)
-				if err == nil {
-					size := binary.LittleEndian.Uint32(res[:4])
-					res = res[4 : 4+size]
-
-					dsl.HashOneMessage(m, mc.Hasher, [][]byte{res}, &hashVerificationContext{id: id, output: res})
-				}
+				dsl.DecodeRequest(m, mc.Coder, int64(params.GetN()), int64(params.GetN()-2*params.GetF()), shares, &decodeMessageContext{id: id})
 			}
+		}
+		return nil
+	})
+
+	dsl.UponDecodeResult(m, func(success bool, decoded []byte, context *decodeMessageContext) error {
+		if context.id <= lastId {
+			return nil
+		}
+		if success {
+			size := binary.LittleEndian.Uint32(decoded[:4])
+			decoded = decoded[4 : 4+size]
+
+			dsl.HashOneMessage(m, mc.Hasher, [][]byte{decoded}, &hashVerificationContext{id: context.id, output: decoded})
 		}
 		return nil
 	})
@@ -340,6 +333,15 @@ func initialize(state *map[int64]*moduleState, id int64, n int) {
 type hashInitialMessageContext struct {
 	id   int64
 	data []byte
+}
+
+type encodeMessageContext struct {
+	id   int64
+	hash []byte
+}
+
+type decodeMessageContext struct {
+	id int64
 }
 
 type hashVerificationContext struct {

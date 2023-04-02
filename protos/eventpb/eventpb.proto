@@ -15,6 +15,7 @@ import "isspb/isspb.proto";
 import "google/protobuf/wrappers.proto";
 import "bcbpb/bcbpb.proto";
 import "brbpb/brbpb.proto";
+import "codingpb/codingpb.proto";
 import "contextstorepb/contextstorepb.proto";
 import "dslpb/dslpb.proto";
 import "mempoolpb/mempoolpb.proto";
@@ -83,10 +84,13 @@ message Event {
     MerkleBuildResult       merkle_build_result = 43;
     MerkleVerifyRequest     merkle_verify_request = 44;
     MerkleVerifyResult      merkle_verify_result = 45;
-    DataEncodeRequest       data_encode_request = 46;
-    DataEncodeResult        data_encode_result = 47;
-    DataDecodeRequest       data_decode_request = 48;
-    DataDecodeResult        data_decode_result = 49;
+    codingpb.EncodeRequest  encode_request = 46;
+    codingpb.EncodeResult   encode_result = 47;
+    codingpb.DecodeRequest  decode_request = 48;
+    codingpb.DecodeResult   decode_result = 49;
+    codingpb.RebuildRequest rebuild_request = 50;
+    codingpb.RebuildResult  rebuild_result = 51;
+
     // for unit-tests
     google.protobuf.StringValue testingString = 301;
     google.protobuf.UInt64Value testingUint = 302;

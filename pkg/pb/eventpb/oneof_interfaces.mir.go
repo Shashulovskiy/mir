@@ -7,6 +7,7 @@ import (
 	bcbpb "github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	brbpb "github.com/filecoin-project/mir/pkg/pb/brbpb"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
+	codingpb "github.com/filecoin-project/mir/pkg/pb/codingpb"
 	contextstorepb "github.com/filecoin-project/mir/pkg/pb/contextstorepb"
 	dslpb "github.com/filecoin-project/mir/pkg/pb/dslpb"
 	factorymodulepb "github.com/filecoin-project/mir/pkg/pb/factorymodulepb"
@@ -201,20 +202,28 @@ func (w *Event_MerkleVerifyResult) Unwrap() *MerkleVerifyResult {
 	return w.MerkleVerifyResult
 }
 
-func (w *Event_DataEncodeRequest) Unwrap() *DataEncodeRequest {
-	return w.DataEncodeRequest
+func (w *Event_EncodeRequest) Unwrap() *codingpb.EncodeRequest {
+	return w.EncodeRequest
 }
 
-func (w *Event_DataEncodeResult) Unwrap() *DataEncodeResult {
-	return w.DataEncodeResult
+func (w *Event_EncodeResult) Unwrap() *codingpb.EncodeResult {
+	return w.EncodeResult
 }
 
-func (w *Event_DataDecodeRequest) Unwrap() *DataDecodeRequest {
-	return w.DataDecodeRequest
+func (w *Event_DecodeRequest) Unwrap() *codingpb.DecodeRequest {
+	return w.DecodeRequest
 }
 
-func (w *Event_DataDecodeResult) Unwrap() *DataDecodeResult {
-	return w.DataDecodeResult
+func (w *Event_DecodeResult) Unwrap() *codingpb.DecodeResult {
+	return w.DecodeResult
+}
+
+func (w *Event_RebuildRequest) Unwrap() *codingpb.RebuildRequest {
+	return w.RebuildRequest
+}
+
+func (w *Event_RebuildResult) Unwrap() *codingpb.RebuildResult {
+	return w.RebuildResult
 }
 
 func (w *Event_TestingString) Unwrap() *wrapperspb.StringValue {

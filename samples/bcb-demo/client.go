@@ -5,7 +5,8 @@ import (
 	"crypto"
 	_ "crypto/sha1"
 	"fmt"
-	"github.com/filecoin-project/mir/pkg/brbdxr"
+	"github.com/filecoin-project/mir/pkg/brbct"
+	"github.com/filecoin-project/mir/pkg/coding"
 	"github.com/filecoin-project/mir/pkg/merkletree"
 	"os"
 
@@ -27,7 +28,7 @@ const (
 	nodeBasePort = 10000
 
 	// The number of nodes participating in the chat.
-	nodeNumber = 7
+	nodeNumber = 4
 
 	// The index of the leader node of BCB.
 	leaderNode = 0
@@ -90,16 +91,21 @@ func run() error {
 
 	merkle := merkletree.NewVerifier()
 
-	brbModule, err := brbdxr.NewModule(
-		&brbdxr.ModuleConfig{
-			Self:     "brbdxr",
-			Consumer: "control",
-			Net:      "net",
-			Crypto:   "crypto",
-			Hasher:   "hasher",
-			//MerkleProofVerifier: "merkle",
+	coder := coding.NewModule(&coding.ModuleConfig{
+		Self: "coder",
+	})
+
+	brbModule, err := brbct.NewModule(
+		&brbct.ModuleConfig{
+			Self:                "brbct",
+			Consumer:            "control",
+			Net:                 "net",
+			Crypto:              "crypto",
+			Hasher:              "hasher",
+			Coder:               "coder",
+			MerkleProofVerifier: "merkle",
 		},
-		&brbdxr.ModuleParams{
+		&brbct.ModuleParams{
 			InstanceUID: []byte("testing instance"),
 			AllNodes:    nodeIDs,
 			Leader:      nodeIDs[leaderNode],
@@ -118,10 +124,11 @@ func run() error {
 	m := map[t.ModuleID]modules.Module{
 		"net":     transportModule,
 		"crypto":  mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
-		"brbdxr":  brbModule,
+		"brbct":   brbModule,
 		"control": control,
 		"hasher":  hasher,
 		"merkle":  merkle,
+		"coder":   coder,
 	}
 
 	// create a Mir node

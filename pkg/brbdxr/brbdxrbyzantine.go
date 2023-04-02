@@ -1,6 +1,7 @@
 package brbdxr
 
 import (
+	"fmt"
 	"github.com/filecoin-project/mir/pkg/brb"
 	"github.com/filecoin-project/mir/pkg/dsl"
 	"github.com/filecoin-project/mir/pkg/modules"
@@ -58,6 +59,7 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 	})
 
 	dsl.UponOneHashResult(m, func(hash []byte, context *hashMessageContext) error {
+		fmt.Printf("Sending echo for id %d\n", context.id)
 		eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, hash, context.toSend), params.AllNodes)
 		return nil
 	})
@@ -83,6 +85,7 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 				if !states[id].sentReady {
 					state := states[id]
 					state.sentReady = true
+					fmt.Printf("Sending ready for id %d\n", id)
 					eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.ReadyMessage(mc.Self, id, hash, brb.Corrupt(chunk)), params.AllNodes)
 				}
 			}
