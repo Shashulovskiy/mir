@@ -263,9 +263,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
 				shares := make([]*codingpb.Share, 0)
 				for _, rd := range currentState.readys {
+					dataCopy := make([]byte, len(rd.Data))
+					copy(dataCopy, rd.Data)
 					shares = append(shares, &codingpb.Share{
 						Number: int64(rd.Number),
-						Chunk:  rd.Data,
+						Chunk:  dataCopy,
 					})
 				}
 
