@@ -83,6 +83,7 @@ type moduleState struct {
 	receivedReady       []bool
 	readyMessagesCount  map[string]int
 	readyMaxAccumulator SingleAccumulator
+	lastDecodeAttempt   int
 }
 
 func incrementAndUpdateEchoAccumulator(hash, chunk []byte, counts map[string]map[string]int, byHash map[string]*SingleAccumulator, accumulator *DualAccumulator) {
@@ -260,7 +261,8 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			}
 
 			// Online error correction
-			if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
+			if len(currentState.readys) > 2*params.GetF() && len(currentState.readys) > currentState.lastDecodeAttempt && currentState.delivered == false {
+				currentState.lastDecodeAttempt = len(currentState.readys)
 				shares := make([]*codingpb.Share, 0)
 				for _, rd := range currentState.readys {
 					dataCopy := make([]byte, len(rd.Data))
@@ -328,6 +330,7 @@ func initialize(state *map[int64]*moduleState, id int64, n int) {
 			receivedReady:         make([]bool, n),
 			readyMessagesCount:    make(map[string]int),
 			readyMaxAccumulator:   SingleAccumulator{},
+			lastDecodeAttempt:     0,
 		}
 	}
 }
