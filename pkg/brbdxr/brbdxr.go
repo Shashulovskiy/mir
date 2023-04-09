@@ -277,6 +277,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 
 			// Online error correction
 			if len(currentState.readys) > 2*params.GetF() && len(currentState.readys) > currentState.lastDecodeAttempt && currentState.delivered == false {
+				currentState.lastDecodeAttempt = len(currentState.readys)
 				output := make([]byte, 0)
 
 				readys := make([]rs.Share, 0)
