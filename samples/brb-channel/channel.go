@@ -167,9 +167,7 @@ func run() error {
 	brbCtModule, err := configureCT(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
 	brbDxrModule, err := configureDXR(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
 
-	coder := coding.NewModule(&coding.ModuleConfig{
-		Self: "coder",
-	})
+	coder := coding.NewModule()
 
 	if err != nil {
 		return nil

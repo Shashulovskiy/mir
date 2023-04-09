@@ -91,9 +91,7 @@ func run() error {
 
 	merkle := merkletree.NewVerifier()
 
-	coder := coding.NewModule(&coding.ModuleConfig{
-		Self: "coder",
-	})
+	coder := coding.NewModule()
 
 	brbModule, err := brbct.NewModule(
 		&brbct.ModuleConfig{

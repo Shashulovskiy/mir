@@ -2,55 +2,54 @@ package coding
 
 import (
 	"fmt"
-	"github.com/filecoin-project/mir/pkg/dsl"
+	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
-	"github.com/filecoin-project/mir/pkg/pb/codingpb"
-	codingpbdsl "github.com/filecoin-project/mir/pkg/pb/codingpb/dsl"
+	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 	t "github.com/filecoin-project/mir/pkg/types"
 	rs "github.com/vivint/infectious"
 )
 
-type ModuleConfig struct {
-	Self t.ModuleID // id of this module
+type Coder struct {
+	coders map[string]*rs.FEC
 }
 
-func NewModule(mc *ModuleConfig) modules.PassiveModule {
-	m := dsl.NewModule(mc.Self)
+func (c *Coder) ApplyEvents(eventsIn *events.EventList) (*events.EventList, error) {
+	return modules.ApplyEventsConcurrently(eventsIn, c.ApplyEvent)
+}
 
-	encoders := make(map[string]*rs.FEC)
-
-	codingpbdsl.UponEncodeRequest(m, func(totalShards int64, dataShards int64, paddedData []uint8, origin *codingpb.EncodeOrigin) error {
-		encoder, err := getFEC(int(totalShards), int(dataShards), encoders)
+func (c *Coder) ApplyEvent(event *eventpb.Event) (*events.EventList, error) {
+	switch e := event.Type.(type) {
+	case *eventpb.Event_Init:
+		// no actions on init
+		return events.EmptyList(), nil
+	case *eventpb.Event_EncodeRequest:
+		encoder, err := getFEC(int(e.EncodeRequest.TotalShards), int(e.EncodeRequest.DataShards), c.coders)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		encoded := make([][]byte, totalShards)
+		encoded := make([][]byte, e.EncodeRequest.TotalShards)
 
 		output := func(s rs.Share) {
 			encoded[s.Number] = make([]byte, len(s.Data))
 			copy(encoded[s.Number], s.Data)
 		}
 
-		err = encoder.Encode(paddedData, output)
+		err = encoder.Encode(e.EncodeRequest.PaddedData, output)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		codingpbdsl.EncodeResult(m, t.ModuleID(origin.Module), encoded, origin)
-
-		return nil
-	})
-
-	codingpbdsl.UponDecodeRequest(m, func(totalShards int64, dataShards int64, shares []*codingpb.Share, origin *codingpb.DecodeOrigin) error {
-		encoder, err := getFEC(int(totalShards), int(dataShards), encoders)
+		return events.ListOf(events.EncodeResult(t.ModuleID(e.EncodeRequest.Origin.Module), encoded, e.EncodeRequest.Origin)), nil
+	case *eventpb.Event_DecodeRequest:
+		encoder, err := getFEC(int(e.DecodeRequest.TotalShards), int(e.DecodeRequest.DataShards), c.coders)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		readys := make([]rs.Share, 0)
-		for _, rd := range shares {
+		for _, rd := range e.DecodeRequest.Shares {
 			readys = append(readys, rs.Share{
 				Number: int(rd.Number),
 				Data:   rd.Chunk,
@@ -60,43 +59,44 @@ func NewModule(mc *ModuleConfig) modules.PassiveModule {
 		res, err := encoder.Decode(nil, readys)
 
 		if err != nil {
-			codingpbdsl.DecodeResult(m, t.ModuleID(origin.Module), false, nil, origin)
+			return events.ListOf(events.DecodeResult(t.ModuleID(e.DecodeRequest.Origin.Module), false, nil, e.DecodeRequest.Origin)), nil
 		} else {
-			codingpbdsl.DecodeResult(m, t.ModuleID(origin.Module), true, res, origin)
+			return events.ListOf(events.DecodeResult(t.ModuleID(e.DecodeRequest.Origin.Module), true, res, e.DecodeRequest.Origin)), nil
 		}
-
-		return nil
-	})
-
-	codingpbdsl.UponRebuildRequest(m, func(totalShards int64, dataShards int64, shares []*codingpb.Share, origin *codingpb.RebuildOrigin) error {
-		encoder, err := getFEC(int(totalShards), int(dataShards), encoders)
+	case *eventpb.Event_RebuildRequest:
+		encoder, err := getFEC(int(e.RebuildRequest.TotalShards), int(e.RebuildRequest.DataShards), c.coders)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		readys := make([]rs.Share, 0)
-		for _, rd := range shares {
+		for _, rd := range e.RebuildRequest.Shares {
 			readys = append(readys, rs.Share{
 				Number: int(rd.Number),
 				Data:   rd.Chunk,
 			})
 		}
 
-		output := make([]byte, len(readys[0].Data)*int(dataShards))
+		output := make([]byte, len(readys[0].Data)*int(e.RebuildRequest.DataShards))
 
 		err = encoder.Rebuild(readys, func(s rs.Share) {
 			copy(output[s.Number*len(s.Data):], s.Data)
 		})
 		if err != nil {
-			codingpbdsl.RebuildResult(m, t.ModuleID(origin.Module), false, nil, origin)
+			return events.ListOf(events.RebuildResult(t.ModuleID(e.RebuildRequest.Origin.Module), false, nil, e.RebuildRequest.Origin)), nil
 		} else {
-			codingpbdsl.RebuildResult(m, t.ModuleID(origin.Module), true, output, origin)
+			return events.ListOf(events.RebuildResult(t.ModuleID(e.RebuildRequest.Origin.Module), true, output, e.RebuildRequest.Origin)), nil
 		}
+	default:
+		// Complain about all other incoming event types.
+		return nil, fmt.Errorf("unexpected event: %T", event.Type)
+	}
+}
 
-		return nil
-	})
+func (c *Coder) ImplementsModule() {}
 
-	return m
+func NewModule() *Coder {
+	return &Coder{coders: make(map[string]*rs.FEC)}
 }
 
 func getFEC(n, k int, fecs map[string]*rs.FEC) (*rs.FEC, error) {

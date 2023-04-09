@@ -243,6 +243,44 @@ func MerkleBuildResult(destModule t.ModuleID, rootHash []byte, proofs []*commonp
 	}
 }
 
+func EncodeResult(destModule t.ModuleID, encoded [][]byte, origin *codingpb.EncodeOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_EncodeResult{
+			EncodeResult: &codingpb.EncodeResult{
+				Encoded: encoded,
+				Origin:  origin,
+			},
+		},
+	}
+}
+
+func DecodeResult(destModule t.ModuleID, success bool, decoded []byte, origin *codingpb.DecodeOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_DecodeResult{
+			DecodeResult: &codingpb.DecodeResult{
+				Success: success,
+				Decoded: decoded,
+				Origin:  origin,
+			},
+		},
+	}
+}
+
+func RebuildResult(destModule t.ModuleID, success bool, decoded []byte, origin *codingpb.RebuildOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_RebuildResult{
+			RebuildResult: &codingpb.RebuildResult{
+				Success: success,
+				Decoded: decoded,
+				Origin:  origin,
+			},
+		},
+	}
+}
+
 // SignRequest returns an event representing a request to the crypto module for computing the signature over data.
 // The origin is an object used to maintain the context for the requesting module and will be included in the
 // SignResult produced by the crypto module.
