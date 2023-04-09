@@ -29,6 +29,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"runtime"
 	"time"
 )
 
@@ -55,6 +56,9 @@ func main() {
 }
 
 func run() error {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	fmt.Printf("Total CPU: %d\n", runtime.NumCPU())
+	
 	temp, err := os.CreateTemp("", "logs")
 	if err != nil {
 		return err
