@@ -251,7 +251,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			if currentState.readyMaxAccumulator.count > params.GetF() && currentState.sentReady == false {
 				// Wait for t + 1 matching ⟨ECHO,m_i,h⟩
 				accumulator := currentState.echoAccumulatorByHash[string(currentState.readyMaxAccumulator.value)]
-				if accumulator.count > params.GetF() {
+				if accumulator != nil && accumulator.count > params.GetF() {
 					currentState.sentReady = true
 					eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.ReadyMessage(
 						mc.Self, id, currentState.readyMaxAccumulator.value,
