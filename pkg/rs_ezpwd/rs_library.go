@@ -18,6 +18,7 @@ func EncodeWrapper(n, f int64, data []byte) [][]byte {
 		for j := 0; j < int(encoded.Size()); j++ {
 			result[j][i] = encoded.Get(j)
 		}
+		DeleteVecUInt8(encoded)
 		DeleteVecUInt8(toEncode)
 	}
 
@@ -42,6 +43,7 @@ func DecodeWrapper(n, f int64, data [][]byte, missing []int) []byte {
 		decoded := Decode(uint(f), toDecode, missingVec)
 		if decoded.Size() == 0 {
 			// Fail
+			DeleteVecUInt8(decoded)
 			DeleteVecInt(missingVec)
 			DeleteVecUInt8(toDecode)
 			return []byte{}
@@ -50,6 +52,7 @@ func DecodeWrapper(n, f int64, data [][]byte, missing []int) []byte {
 		for j := 0; j < int(decoded.Size()); j++ {
 			result[i*(int(n-2*f))+j] = decoded.Get(j)
 		}
+		DeleteVecUInt8(decoded)
 		DeleteVecUInt8(toDecode)
 	}
 
