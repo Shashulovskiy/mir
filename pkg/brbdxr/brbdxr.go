@@ -5,15 +5,18 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/dsl"
+	//"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
 	brbdxrpbdsl "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/dsl"
 	brbdxrpbmsgs "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/msgs"
 	brbpbdsl "github.com/filecoin-project/mir/pkg/pb/brbpb/dsl"
 	"github.com/filecoin-project/mir/pkg/pb/codingpb"
 	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
+	rs "github.com/filecoin-project/mir/pkg/rs_ezpwd"
 	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/mathutil"
-	rs "github.com/vivint/infectious"
+	"github.com/pkg/errors"
+	rs1 "github.com/vivint/infectious"
 	"strconv"
 )
 
@@ -79,7 +82,7 @@ type moduleState struct {
 	echoAccumulatorByHash map[string]*SingleAccumulator
 	echosMaxAccumulator   DualAccumulator
 
-	readys              []rs.Share
+	readys              []rs1.Share
 	receivedReady       []bool
 	readyMessagesCount  map[string]int
 	readyMaxAccumulator SingleAccumulator
@@ -178,16 +181,12 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			return nil
 		}
 
-		dsl.EncodeRequest(m, mc.Coder, int64(params.GetN()), int64(params.GetN()-2*params.GetF()), context.data, &encodeMessageContext{
-			id:   context.id,
-			hash: hash,
-		})
-		return nil
-	})
-
-	dsl.UponEncodeResult(m, func(encoded [][]uint8, context *encodeMessageContext) error {
+		encoded, err := encode(int64(params.GetN()), int64(params.GetF()), context.data)
+		if err != nil {
+			return err
+		}
 		for i, node := range params.AllNodes {
-			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, context.hash, encoded[i]), []t.NodeID{node})
+			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, hash, encoded[i]), []t.NodeID{node})
 		}
 		return nil
 	})
@@ -220,7 +219,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 		if !state[id].receivedReady[fromId] {
 			state[id].receivedReady[fromId] = true
-			state[id].readys = append(state[id].readys, rs.Share{
+			state[id].readys = append(state[id].readys, rs1.Share{
 				Number: int(fromId),
 				Data:   chunk,
 			})
@@ -265,29 +264,20 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 				currentState.lastDecodeAttempt = len(currentState.readys)
 				shares := make([]*codingpb.Share, 0)
 				for _, rd := range currentState.readys {
-					dataCopy := make([]byte, len(rd.Data))
-					copy(dataCopy, rd.Data)
 					shares = append(shares, &codingpb.Share{
 						Number: int64(rd.Number),
-						Chunk:  dataCopy,
+						Chunk:  rd.Data,
 					})
 				}
 
-				dsl.DecodeRequest(m, mc.Coder, int64(params.GetN()), int64(params.GetN()-2*params.GetF()), shares, &decodeMessageContext{id: id})
+				success, decoded := decode(int64(params.GetN()), int64(params.GetF()), shares)
+				if success {
+					size := binary.LittleEndian.Uint32(decoded[:4])
+					decoded = decoded[4 : 4+size]
+
+					dsl.HashOneMessage(m, mc.Hasher, [][]byte{decoded}, &hashVerificationContext{id: id, output: decoded})
+				}
 			}
-		}
-		return nil
-	})
-
-	dsl.UponDecodeResult(m, func(success bool, decoded []byte, context *decodeMessageContext) error {
-		if context.id <= lastId {
-			return nil
-		}
-		if success {
-			size := binary.LittleEndian.Uint32(decoded[:4])
-			decoded = decoded[4 : 4+size]
-
-			dsl.HashOneMessage(m, mc.Hasher, [][]byte{decoded}, &hashVerificationContext{id: context.id, output: decoded})
 		}
 		return nil
 	})
@@ -316,6 +306,36 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	return m, nil
 }
 
+func encode(n, f int64, data []byte) ([][]byte, error) {
+	encoded := rs.EncodeWrapper(n, f, data)
+
+	if len(encoded) == 0 {
+		return nil, errors.New("Failed to encode")
+	}
+
+	return encoded, nil
+}
+
+func decode(n, f int64, inputShares []*codingpb.Share) (bool, []byte) {
+	shares := make([][]byte, n)
+	missing := make([]int, 0)
+	for _, share := range inputShares {
+		shares[share.Number] = share.Chunk
+	}
+	for i := range shares {
+		if shares[i] == nil {
+			missing = append(missing, i)
+		}
+	}
+	decoded := rs.DecodeWrapper(n, f, shares, missing)
+
+	if len(decoded) == 0 {
+		return false, nil
+	} else {
+		return true, decoded
+	}
+}
+
 func initialize(state *map[int64]*moduleState, id int64, n int) {
 	if _, ok := (*state)[id]; !ok {
 		(*state)[id] = &moduleState{
@@ -326,7 +346,7 @@ func initialize(state *map[int64]*moduleState, id int64, n int) {
 			echoMessagesCount:     make(map[string]map[string]int),
 			echoAccumulatorByHash: make(map[string]*SingleAccumulator),
 			echosMaxAccumulator:   DualAccumulator{},
-			readys:                make([]rs.Share, 0),
+			readys:                make([]rs1.Share, 0),
 			receivedReady:         make([]bool, n),
 			readyMessagesCount:    make(map[string]int),
 			readyMaxAccumulator:   SingleAccumulator{},

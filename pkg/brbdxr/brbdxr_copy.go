@@ -14,7 +14,7 @@ package brbdxr
 //	t "github.com/filecoin-project/mir/pkg/types"
 //	"github.com/filecoin-project/mir/pkg/util/mathutil"
 //	"github.com/pkg/errors"
-//	rs "github.com/vivint/infectious"
+//	rs_ezpwd "github.com/vivint/infectious"
 //	"strconv"
 //)
 //
@@ -78,7 +78,7 @@ package brbdxr
 //	echoAccumulatorByHash map[string]*SingleAccumulator
 //	echosMaxAccumulator   DualAccumulator
 //
-//	readys              []rs.Share
+//	readys              []rs_ezpwd.Share
 //	receivedReady       []bool
 //	readyMessagesCount  map[string]int
 //	readyMaxAccumulator SingleAccumulator
@@ -129,7 +129,7 @@ package brbdxr
 //func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 //	m := dsl.NewModule(mc.Self)
 //
-//	encoder, err := rs.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
+//	encoder, err := rs_ezpwd.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
 //
 //	if err != nil {
 //		return nil, errors.Wrap(err, "Unable to create coder")
@@ -190,7 +190,7 @@ package brbdxr
 //		dataWithPadding := make([]byte, nDataShards*shardSize)
 //		copy(dataWithPadding, context.data)
 //
-//		output := func(s rs.Share) {
+//		output := func(s rs_ezpwd.Share) {
 //			encoded[s.Number] = make([]byte, len(s.Data))
 //			copy(encoded[s.Number], s.Data)
 //		}
@@ -235,7 +235,7 @@ package brbdxr
 //		}
 //		if !state[id].receivedReady[fromId] {
 //			state[id].receivedReady[fromId] = true
-//			state[id].readys = append(state[id].readys, rs.Share{
+//			state[id].readys = append(state[id].readys, rs_ezpwd.Share{
 //				Number: int(fromId),
 //				Data:   chunk,
 //			})
@@ -279,7 +279,7 @@ package brbdxr
 //			if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
 //				output := make([]byte, 0)
 //
-//				readys := make([]rs.Share, 0)
+//				readys := make([]rs_ezpwd.Share, 0)
 //				for _, rd := range currentState.readys {
 //					readys = append(readys, rd.DeepCopy())
 //				}
@@ -330,7 +330,7 @@ package brbdxr
 //			echoMessagesCount:     make(map[string]map[string]int),
 //			echoAccumulatorByHash: make(map[string]*SingleAccumulator),
 //			echosMaxAccumulator:   DualAccumulator{},
-//			readys:                make([]rs.Share, 0),
+//			readys:                make([]rs_ezpwd.Share, 0),
 //			receivedReady:         make([]bool, n),
 //			readyMessagesCount:    make(map[string]int),
 //			readyMaxAccumulator:   SingleAccumulator{},

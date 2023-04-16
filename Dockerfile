@@ -1,5 +1,7 @@
 FROM golang:1.18-alpine
 
+RUN apk add build-base
+
 WORKDIR /app
 
 COPY go.mod .
@@ -8,5 +10,5 @@ RUN go mod download
 
 COPY . .
 
-CMD GOOS=linux GOARCH=amd64 go run ./samples/brb-channel tests none
+CMD GOOS=linux CGO_CFLAGS="-O2" CGO_CXXFLAGS="-std=c++11" go run ./samples/brb-channel tests none
 #CMD [". /node"]

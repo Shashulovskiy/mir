@@ -1,0 +1,6 @@
+[submodule "ezpwd-reed-solomon"]
+	path = ezpwd-reed-solomon
+	url = git@github.com:kuriboshi/ezpwd-reed-solomon.git
+[submodule "pkg/rs/ezpwd-reed-solomon"]
+	path = pkg/rs/ezpwd-reed-solomon
+	url = git@github.com:pjkundert/ezpwd-reed-solomon.git

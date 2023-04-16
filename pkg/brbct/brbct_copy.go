@@ -13,7 +13,7 @@ package brbct
 //	t "github.com/filecoin-project/mir/pkg/types"
 //	"github.com/filecoin-project/mir/pkg/util/mathutil"
 //	"github.com/pkg/errors"
-//	rs "github.com/vivint/infectious"
+//	rs_ezpwd "github.com/vivint/infectious"
 //	"strconv"
 //)
 //
@@ -68,7 +68,7 @@ package brbct
 //	sentReady bool
 //	delivered bool
 //
-//	echos                    map[string][]rs.Share
+//	echos                    map[string][]rs_ezpwd.Share
 //	receivedEcho             []bool
 //	echoMessagesCount        map[string]int
 //	echoMessagesAccumulator  Accumulator
@@ -80,7 +80,7 @@ package brbct
 //func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 //	m := dsl.NewModule(mc.Self)
 //
-//	encoder, err := rs.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
+//	encoder, err := rs_ezpwd.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
 //
 //	if err != nil {
 //		return nil, errors.Wrap(err, "Unable to create coder")
@@ -112,7 +112,7 @@ package brbct
 //		dataWithPadding := make([]byte, nDataShards*shardSize)
 //		copy(dataWithPadding, data)
 //
-//		output := func(s rs.Share) {
+//		output := func(s rs_ezpwd.Share) {
 //			encoded[s.Number] = make([]byte, len(s.Data))
 //			copy(encoded[s.Number], s.Data)
 //		}
@@ -202,7 +202,7 @@ package brbct
 //			hash := string(context.rootHash)
 //			if !currentState.receivedEcho[context.fromId] {
 //				currentState.receivedEcho[context.fromId] = true
-//				currentState.echos[hash] = append(currentState.echos[hash], rs.Share{
+//				currentState.echos[hash] = append(currentState.echos[hash], rs_ezpwd.Share{
 //					Number: int(context.fromId),
 //					Data:   context.chunk,
 //				})
@@ -267,7 +267,7 @@ package brbct
 //
 //			if currentState.readyMessagesAccumulator.count >= params.GetN()-params.GetF() && currentState.echoMessagesAccumulator.count >= params.GetN()-2*params.GetF() && !currentState.delivered {
 //				output := make([]byte, len(currentState.echos[currentState.echoMessagesAccumulator.value][0].Data)*(params.GetN()-2*params.GetF()))
-//				err := encoder.Rebuild(currentState.echos[currentState.echoMessagesAccumulator.value], func(s rs.Share) {
+//				err := encoder.Rebuild(currentState.echos[currentState.echoMessagesAccumulator.value], func(s rs_ezpwd.Share) {
 //					copy(output[s.Number*len(s.Data):], s.Data)
 //				})
 //				if err != nil {
@@ -298,7 +298,7 @@ package brbct
 //			sentEcho:                 false,
 //			sentReady:                false,
 //			delivered:                false,
-//			echos:                    make(map[string][]rs.Share),
+//			echos:                    make(map[string][]rs_ezpwd.Share),
 //			receivedEcho:             make([]bool, n),
 //			echoMessagesCount:        make(map[string]int),
 //			echoMessagesAccumulator:  Accumulator{value: "", count: -1},
