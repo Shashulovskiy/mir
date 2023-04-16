@@ -7,7 +7,6 @@ import (
 	"github.com/filecoin-project/mir/pkg/modules"
 	"github.com/filecoin-project/mir/pkg/pb/brbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
-	"github.com/pkg/profile"
 	"strconv"
 	"strings"
 	"time"
@@ -97,7 +96,7 @@ func (m *controlModule) newIteration() {
 				m.currentBenchmark.message = data
 
 				println("Starting benchmark...")
-				p := profile.Start(profile.CPUProfile, profile.ProfilePath(fmt.Sprintf("./%s_%d/", m.currentBenchmark.algorithm, m.currentBenchmark.messageSize)))
+				//p := profile.Start(profile.CPUProfile, profile.ProfilePath(fmt.Sprintf("./%s_%d/", m.currentBenchmark.algorithm, m.currentBenchmark.messageSize)))
 				m.lastId++
 				m.sentMessages++
 				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, &m.currentBenchmark.message, m.currentBenchmark.algorithm)
@@ -113,7 +112,7 @@ func (m *controlModule) newIteration() {
 						duration:    m.currentBenchmark.duration.Seconds(),
 						messageSize: m.currentBenchmark.messageSize,
 					})
-					p.Stop()
+					//p.Stop()
 					m.currentBenchmark = nil
 					m.sentMessages = 0
 				}()
