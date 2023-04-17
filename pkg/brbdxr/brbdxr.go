@@ -188,17 +188,13 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID, decoding
 		nDataShards := params.GetN() - 2*params.GetF()
 		shardSize := len(context.data) / nDataShards
 
-		encoded := make([][]byte, params.GetN())
-
 		dataWithPadding := make([]byte, nDataShards*shardSize)
 		copy(dataWithPadding, context.data)
 
-		output := func(s rs.Share) {
-			encoded[s.Number] = make([]byte, len(s.Data))
-			copy(encoded[s.Number], s.Data)
+		encoded, err := encode(int64(params.GetN()), int64(params.GetF()), dataWithPadding)
+		if err != nil {
+			return err
 		}
-
-		err := encoder.Encode(dataWithPadding, output)
 
 		if err != nil {
 			return err
@@ -313,7 +309,7 @@ func onlineErrorCorrection(strategy string, currentState *moduleState, params *M
 	if strategy == "classic" {
 		// Attempt error correction for each message received n-f...f (f times)
 		if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
-			tryCorrectErrors(currentState, encoder, m, mc, id)
+			tryCorrectErrors(currentState, encoder, m, mc, id, int64(params.GetN()), int64(params.GetF()))
 		}
 	} else if strategy == "optimized" {
 		//if len(currentState.readys) == params.GetN()-2*params.GetF() && currentState.delivered == false {
@@ -322,7 +318,7 @@ func onlineErrorCorrection(strategy string, currentState *moduleState, params *M
 		if len(currentState.readys) >= currentState.nextDecodeAttempt && currentState.delivered == false {
 			currentState.nextDecodeAttempt = currentState.nextDecodeAttempt + (params.GetN()-currentState.nextDecodeAttempt+1)/2
 
-			tryCorrectErrors(currentState, encoder, m, mc, id)
+			tryCorrectErrors(currentState, encoder, m, mc, id, int64(params.GetN()), int64(params.GetF()))
 		}
 	} else {
 		panic("Unknown strategy")
@@ -351,17 +347,15 @@ func tryCorrectErasures(currentState *moduleState, params *ModuleParams, encoder
 	}
 }
 
-func tryCorrectErrors(currentState *moduleState, encoder *rs.FEC, m dsl.Module, mc *ModuleConfig, id int64) {
-	output := make([]byte, 0)
-
+func tryCorrectErrors(currentState *moduleState, encoder *rs.FEC, m dsl.Module, mc *ModuleConfig, id int64, n, f int64) {
 	readys := make([]rs.Share, 0)
 	for _, rd := range currentState.readys {
 		readys = append(readys, rd.DeepCopy())
 	}
 
 	currentState.decodeAttempts++
-	res, err := encoder.Decode(output, readys)
-	if err == nil {
+	success, res := decode(n, f, currentState.readys)
+	if success {
 		size := binary.LittleEndian.Uint32(res[:4])
 		if int(size) > len(res) {
 			return

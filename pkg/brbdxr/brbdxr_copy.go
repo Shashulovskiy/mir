@@ -1,9 +1,9 @@
 package brbdxr
 
 import (
-	"github.com/filecoin-project/mir/pkg/pb/codingpb"
 	rs "github.com/filecoin-project/mir/pkg/rs_ezpwd"
 	"github.com/pkg/errors"
+	rs_inf "github.com/vivint/infectious"
 )
 
 //func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
@@ -191,11 +191,11 @@ func encode(n, f int64, data []byte) ([][]byte, error) {
 	return encoded, nil
 }
 
-func decode(n, f int64, inputShares []*codingpb.Share) (bool, []byte) {
+func decode(n, f int64, inputShares []rs_inf.Share) (bool, []byte) {
 	shares := make([][]byte, n)
 	missing := make([]int, 0)
 	for _, share := range inputShares {
-		shares[share.Number] = share.Chunk
+		shares[share.Number] = share.Data
 	}
 	for i := range shares {
 		if shares[i] == nil {
