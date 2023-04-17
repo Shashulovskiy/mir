@@ -5,18 +5,15 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/filecoin-project/mir/pkg/dsl"
-	//"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
 	brbdxrpbdsl "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/dsl"
 	brbdxrpbmsgs "github.com/filecoin-project/mir/pkg/pb/brbdxrpb/msgs"
 	brbpbdsl "github.com/filecoin-project/mir/pkg/pb/brbpb/dsl"
-	"github.com/filecoin-project/mir/pkg/pb/codingpb"
 	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
-	rs "github.com/filecoin-project/mir/pkg/rs_ezpwd"
 	t "github.com/filecoin-project/mir/pkg/types"
 	"github.com/filecoin-project/mir/pkg/util/mathutil"
 	"github.com/pkg/errors"
-	rs1 "github.com/vivint/infectious"
+	rs "github.com/vivint/infectious"
 	"strconv"
 )
 
@@ -82,11 +79,11 @@ type moduleState struct {
 	echoAccumulatorByHash map[string]*SingleAccumulator
 	echosMaxAccumulator   DualAccumulator
 
-	readys              []rs1.Share
+	readys              []rs.Share
 	receivedReady       []bool
 	readyMessagesCount  map[string]int
 	readyMaxAccumulator SingleAccumulator
-	lastDecodeAttempt   int
+	nextDecodeAttempt   int
 }
 
 func incrementAndUpdateEchoAccumulator(hash, chunk []byte, counts map[string]map[string]int, byHash map[string]*SingleAccumulator, accumulator *DualAccumulator) {
@@ -131,8 +128,14 @@ func incrementAndUpdateReadyAccumulator(hash []byte, counts map[string]int, accu
 	}
 }
 
-func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
+func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID, decodingStrategy string) (modules.PassiveModule, error) {
 	m := dsl.NewModule(mc.Self)
+
+	encoder, err := rs.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to create coder")
+	}
 
 	state := make(map[int64]*moduleState)
 	lastId := int64(0)
@@ -151,7 +154,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			return nil
 		}
 		if from == params.Leader {
-			initialize(&state, id, params.GetN())
+			initialize(&state, id, params.GetN(), params.GetF())
 
 			if !state[id].sentEcho {
 				state[id].sentEcho = true
@@ -181,10 +184,25 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			return nil
 		}
 
-		encoded, err := encode(int64(params.GetN()), int64(params.GetF()), context.data)
+		nDataShards := params.GetN() - 2*params.GetF()
+		shardSize := len(context.data) / nDataShards
+
+		encoded := make([][]byte, params.GetN())
+
+		dataWithPadding := make([]byte, nDataShards*shardSize)
+		copy(dataWithPadding, context.data)
+
+		output := func(s rs.Share) {
+			encoded[s.Number] = make([]byte, len(s.Data))
+			copy(encoded[s.Number], s.Data)
+		}
+
+		err := encoder.Encode(dataWithPadding, output)
+
 		if err != nil {
 			return err
 		}
+
 		for i, node := range params.AllNodes {
 			eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.EchoMessage(mc.Self, context.id, hash, encoded[i]), []t.NodeID{node})
 		}
@@ -195,7 +213,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if id <= lastId {
 			return nil
 		}
-		initialize(&state, id, params.GetN())
+		initialize(&state, id, params.GetN(), params.GetF())
 		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
 			return err
@@ -212,14 +230,14 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if id <= lastId {
 			return nil
 		}
-		initialize(&state, id, params.GetN())
+		initialize(&state, id, params.GetN(), params.GetF())
 		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
 			return err
 		}
 		if !state[id].receivedReady[fromId] {
 			state[id].receivedReady[fromId] = true
-			state[id].readys = append(state[id].readys, rs1.Share{
+			state[id].readys = append(state[id].readys, rs.Share{
 				Number: int(fromId),
 				Data:   chunk,
 			})
@@ -250,7 +268,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			if currentState.readyMaxAccumulator.count > params.GetF() && currentState.sentReady == false {
 				// Wait for t + 1 matching ⟨ECHO,m_i,h⟩
 				accumulator := currentState.echoAccumulatorByHash[string(currentState.readyMaxAccumulator.value)]
-				if accumulator != nil && accumulator.count > params.GetF() {
+				if accumulator.count > params.GetF() {
 					currentState.sentReady = true
 					eventpbdsl.SendMessage(m, mc.Net, brbdxrpbmsgs.ReadyMessage(
 						mc.Self, id, currentState.readyMaxAccumulator.value,
@@ -260,24 +278,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			}
 
 			// Online error correction
-			if len(currentState.readys) > 2*params.GetF() && len(currentState.readys) > currentState.lastDecodeAttempt && currentState.delivered == false {
-				currentState.lastDecodeAttempt = len(currentState.readys)
-				shares := make([]*codingpb.Share, 0)
-				for _, rd := range currentState.readys {
-					shares = append(shares, &codingpb.Share{
-						Number: int64(rd.Number),
-						Chunk:  rd.Data,
-					})
-				}
-
-				success, decoded := decode(int64(params.GetN()), int64(params.GetF()), shares)
-				if success {
-					size := binary.LittleEndian.Uint32(decoded[:4])
-					decoded = decoded[4 : 4+size]
-
-					dsl.HashOneMessage(m, mc.Hasher, [][]byte{decoded}, &hashVerificationContext{id: id, output: decoded})
-				}
-			}
+			onlineErrorCorrection(decodingStrategy, currentState, params, encoder, m, mc, id)
 		}
 		return nil
 	})
@@ -306,37 +307,72 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 	return m, nil
 }
 
-func encode(n, f int64, data []byte) ([][]byte, error) {
-	encoded := rs.EncodeWrapper(n, f, data)
-
-	if len(encoded) == 0 {
-		return nil, errors.New("Failed to encode")
-	}
-
-	return encoded, nil
-}
-
-func decode(n, f int64, inputShares []*codingpb.Share) (bool, []byte) {
-	shares := make([][]byte, n)
-	missing := make([]int, 0)
-	for _, share := range inputShares {
-		shares[share.Number] = share.Chunk
-	}
-	for i := range shares {
-		if shares[i] == nil {
-			missing = append(missing, i)
+func onlineErrorCorrection(strategy string, currentState *moduleState, params *ModuleParams, encoder *rs.FEC, m dsl.Module, mc *ModuleConfig, id int64) {
+	if strategy == "classic" {
+		// Attempt error correction for each message received n-f...f (f times)
+		if len(currentState.readys) > 2*params.GetF() && currentState.delivered == false {
+			tryCorrectErrors(currentState, encoder, m, mc, id)
 		}
-	}
-	decoded := rs.DecodeWrapper(n, f, shares, missing)
-
-	if len(decoded) == 0 {
-		return false, nil
+	} else if strategy == "optimized" {
+		//if len(currentState.readys) == params.GetN()-2*params.GetF() && currentState.delivered == false {
+		//	tryCorrectErasures(currentState, params, encoder, m, mc, id)
+		//}
+		if len(currentState.readys) >= currentState.nextDecodeAttempt && currentState.delivered == false {
+			if params.GetN()-currentState.nextDecodeAttempt == 1 {
+				currentState.nextDecodeAttempt = params.GetN()
+			} else {
+				currentState.nextDecodeAttempt = currentState.nextDecodeAttempt + (params.GetN()-currentState.nextDecodeAttempt+1)/2
+			}
+			tryCorrectErrors(currentState, encoder, m, mc, id)
+		}
 	} else {
-		return true, decoded
+		panic("Unknown strategy")
 	}
 }
 
-func initialize(state *map[int64]*moduleState, id int64, n int) {
+func tryCorrectErasures(currentState *moduleState, params *ModuleParams, encoder *rs.FEC, m dsl.Module, mc *ModuleConfig, id int64) {
+	res := make([]byte, len(currentState.readys[0].Data)*(params.GetN()-2*params.GetF()))
+
+	readys := make([]rs.Share, 0)
+	for _, rd := range currentState.readys {
+		readys = append(readys, rd.DeepCopy())
+	}
+
+	err := encoder.Rebuild(currentState.readys, func(s rs.Share) {
+		copy(res[s.Number*len(s.Data):], s.Data)
+	})
+	if err == nil {
+		size := binary.LittleEndian.Uint32(res[:4])
+		if int(size) > len(res) {
+			return
+		}
+		res = res[4 : 4+size]
+
+		dsl.HashOneMessage(m, mc.Hasher, [][]byte{res}, &hashVerificationContext{id: id, output: res})
+	}
+}
+
+func tryCorrectErrors(currentState *moduleState, encoder *rs.FEC, m dsl.Module, mc *ModuleConfig, id int64) {
+	output := make([]byte, 0)
+
+	readys := make([]rs.Share, 0)
+	for _, rd := range currentState.readys {
+		readys = append(readys, rd.DeepCopy())
+	}
+
+	res, err := encoder.Decode(output, readys)
+	if err == nil {
+		size := binary.LittleEndian.Uint32(res[:4])
+		if int(size) > len(res) {
+			return
+		}
+		res = res[4 : 4+size]
+
+		dsl.HashOneMessage(m, mc.Hasher, [][]byte{res}, &hashVerificationContext{id: id, output: res})
+	}
+}
+
+func initialize(state *map[int64]*moduleState, id int64, n, f int) {
 	if _, ok := (*state)[id]; !ok {
 		(*state)[id] = &moduleState{
 			sentEcho:              false,
@@ -346,11 +382,11 @@ func initialize(state *map[int64]*moduleState, id int64, n int) {
 			echoMessagesCount:     make(map[string]map[string]int),
 			echoAccumulatorByHash: make(map[string]*SingleAccumulator),
 			echosMaxAccumulator:   DualAccumulator{},
-			readys:                make([]rs1.Share, 0),
+			readys:                make([]rs.Share, 0),
 			receivedReady:         make([]bool, n),
 			readyMessagesCount:    make(map[string]int),
 			readyMaxAccumulator:   SingleAccumulator{},
-			lastDecodeAttempt:     0,
+			nextDecodeAttempt:     n - f,
 		}
 	}
 }

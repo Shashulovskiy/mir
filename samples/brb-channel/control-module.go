@@ -97,6 +97,7 @@ func (m *controlModule) newIteration() {
 
 				println("Starting benchmark...")
 				//p := profile.Start(profile.CPUProfile, profile.ProfilePath(fmt.Sprintf("./%s_%d/", m.currentBenchmark.algorithm, m.currentBenchmark.messageSize)))
+				//pmem := profile.Start(profile.MemProfile, profile.ProfilePath(fmt.Sprintf("./%s_%d_mem/", m.currentBenchmark.algorithm, m.currentBenchmark.messageSize)))
 				m.lastId++
 				m.sentMessages++
 				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, &m.currentBenchmark.message, m.currentBenchmark.algorithm)
@@ -113,6 +114,7 @@ func (m *controlModule) newIteration() {
 						messageSize: m.currentBenchmark.messageSize,
 					})
 					//p.Stop()
+					//pmem.Stop()
 					m.currentBenchmark = nil
 					m.sentMessages = 0
 				}()

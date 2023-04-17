@@ -113,7 +113,7 @@ func run() error {
 	for i, ip := range ips {
 		if ip == thisIp {
 			ownID = t.NewNodeIDFromInt(i)
-			if i > len(ips)-len(ips)/3 && args.ByzantineBehavior != "none" {
+			if i >= 1 && i <= (len(ips)-1)/3 && args.ByzantineBehavior != "none" {
 				byzantine = true
 				fmt.Printf("Enabling byzantine behavior\n")
 			} else {
@@ -166,6 +166,7 @@ func run() error {
 	brbBrachaModule := configureBracha(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
 	brbCtModule, err := configureCT(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
 	brbDxrModule, err := configureDXR(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
+	brbDxrOptimizedModule, err := configureDXROptimized(byzantine, args.ByzantineBehavior, nodeIDs, leaderNode, ownID)
 
 	coder := coding.NewModule()
 
@@ -199,15 +200,16 @@ func run() error {
 	)
 
 	m := map[t.ModuleID]modules.Module{
-		"net":     transportModule,
-		"crypto":  mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
-		"brb":     brbBrachaModule,
-		"brbct":   brbCtModule,
-		"brbdxr":  brbDxrModule,
-		"control": control,
-		"hasher":  hasher,
-		"merkle":  merkle,
-		"coder":   coder,
+		"net":             transportModule,
+		"crypto":          mirCrypto.New(&mirCrypto.DummyCrypto{DummySig: []byte{0}}),
+		"brb":             brbBrachaModule,
+		"brbct":           brbCtModule,
+		"brbdxr":          brbDxrModule,
+		"brbdxroptimized": brbDxrOptimizedModule,
+		"control":         control,
+		"hasher":          hasher,
+		"merkle":          merkle,
+		"coder":           coder,
 	}
 
 	// create a Mir node
@@ -291,7 +293,28 @@ func configureDXR(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, 
 	if byzantine {
 		return brbdxr.NewByzantineModule(moduleConfig, moduleParams, ownID, byzantineStrategy)
 	} else {
-		return brbdxr.NewModule(moduleConfig, moduleParams, ownID)
+		return brbdxr.NewModule(moduleConfig, moduleParams, ownID, "classic")
+	}
+}
+
+func configureDXROptimized(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, leaderNode int, ownID t.NodeID) (modules.PassiveModule, error) {
+	moduleConfig := &brbdxr.ModuleConfig{
+		Self:     "brbdxroptimized",
+		Consumer: "control",
+		Net:      "net",
+		Crypto:   "crypto",
+		Hasher:   "hasher",
+		Coder:    "coder",
+	}
+	moduleParams := &brbdxr.ModuleParams{
+		InstanceUID: []byte("testing instance"),
+		AllNodes:    nodeIDs,
+		Leader:      nodeIDs[leaderNode],
+	}
+	if byzantine {
+		return brbdxr.NewByzantineModule(moduleConfig, moduleParams, ownID, byzantineStrategy)
+	} else {
+		return brbdxr.NewModule(moduleConfig, moduleParams, ownID, "optimized")
 	}
 }
 

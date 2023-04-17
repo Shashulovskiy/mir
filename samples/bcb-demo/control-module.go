@@ -84,7 +84,7 @@ func (m *controlModule) readMessageFromConsole() error {
 	}
 
 	m.eventsOut <- events.ListOf(&eventpb.Event{
-		DestModule: "brbct",
+		DestModule: "brbdxr",
 		Type: &eventpb.Event_Brb{
 			Brb: &brbpb.Event{
 				Type: &brbpb.Event_Request{
