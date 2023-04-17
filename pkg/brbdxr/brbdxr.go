@@ -84,6 +84,7 @@ type moduleState struct {
 	readyMessagesCount  map[string]int
 	readyMaxAccumulator SingleAccumulator
 	nextDecodeAttempt   int
+	decodeAttempts      int
 }
 
 func incrementAndUpdateEchoAccumulator(hash, chunk []byte, counts map[string]map[string]int, byHash map[string]*SingleAccumulator, accumulator *DualAccumulator) {
@@ -291,6 +292,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID, decoding
 		if bytes.Equal(hash, currentState.readyMaxAccumulator.value) {
 			if !currentState.delivered {
 				currentState.delivered = true
+				fmt.Printf("Took %d attempts\n", currentState.decodeAttempts)
 				brbpbdsl.Deliver(m, mc.Consumer, context.id, context.output)
 				if context.id > lastId {
 					for i := lastId; i <= context.id; i++ {
@@ -318,11 +320,8 @@ func onlineErrorCorrection(strategy string, currentState *moduleState, params *M
 		//	tryCorrectErasures(currentState, params, encoder, m, mc, id)
 		//}
 		if len(currentState.readys) >= currentState.nextDecodeAttempt && currentState.delivered == false {
-			if params.GetN()-currentState.nextDecodeAttempt == 1 {
-				currentState.nextDecodeAttempt = params.GetN()
-			} else {
-				currentState.nextDecodeAttempt = currentState.nextDecodeAttempt + (params.GetN()-currentState.nextDecodeAttempt+1)/2
-			}
+			currentState.nextDecodeAttempt = currentState.nextDecodeAttempt + (params.GetN()-currentState.nextDecodeAttempt+1)/2
+
 			tryCorrectErrors(currentState, encoder, m, mc, id)
 		}
 	} else {
@@ -360,6 +359,7 @@ func tryCorrectErrors(currentState *moduleState, encoder *rs.FEC, m dsl.Module, 
 		readys = append(readys, rd.DeepCopy())
 	}
 
+	currentState.decodeAttempts++
 	res, err := encoder.Decode(output, readys)
 	if err == nil {
 		size := binary.LittleEndian.Uint32(res[:4])
@@ -387,6 +387,7 @@ func initialize(state *map[int64]*moduleState, id int64, n, f int) {
 			readyMessagesCount:    make(map[string]int),
 			readyMaxAccumulator:   SingleAccumulator{},
 			nextDecodeAttempt:     n - f,
+			decodeAttempts:        0,
 		}
 	}
 }
