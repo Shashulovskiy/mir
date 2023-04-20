@@ -10,6 +10,6 @@ RUN go mod download
 
 COPY . .
 
-CMD go env -w CGO_CXXFLAGS="-std=c++11 -O2"
+CMD go env -w CGO_CXXFLAGS="-std=c++11 -OFast"
 CMD go run ./samples/brb-channel tests corrupt
 #CMD [". /node"]
