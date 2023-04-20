@@ -10,5 +10,6 @@ RUN go mod download
 
 COPY . .
 
-CMD GOOS=linux CGO_CFLAGS="-O2" CGO_CXXFLAGS="-std=c++11" go run ./samples/brb-channel tests none
+CMD go env -w CGO_CXXFLAGS="-std=c++11 -O2"
+CMD go run ./samples/brb-channel tests corrupt
 #CMD [". /node"]
