@@ -262,7 +262,7 @@ func configureCT(byzantine bool, byzantineStrategy string, nodeIDs []t.NodeID, l
 		Crypto:              "crypto",
 		Hasher:              "hasher",
 		MerkleProofVerifier: "merkle",
-		Coder:               "coder",
+		//Coder:               "coder",
 	}
 	moduleParams := &brbct.ModuleParams{
 		InstanceUID: []byte("testing instance"),
