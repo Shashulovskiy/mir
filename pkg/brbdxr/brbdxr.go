@@ -84,7 +84,6 @@ type moduleState struct {
 	readyMessagesCount  map[string]int
 	readyMaxAccumulator SingleAccumulator
 	nextDecodeAttempt   int
-	decodeAttempts      int
 }
 
 func incrementAndUpdateEchoAccumulator(hash, chunk []byte, counts map[string]map[string]int, byHash map[string]*SingleAccumulator, accumulator *DualAccumulator) {
@@ -288,7 +287,6 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID, decoding
 		if bytes.Equal(hash, currentState.readyMaxAccumulator.value) {
 			if !currentState.delivered {
 				currentState.delivered = true
-				fmt.Printf("Took %d attempts\n", currentState.decodeAttempts)
 				brbpbdsl.Deliver(m, mc.Consumer, context.id, context.output)
 				if context.id > lastId {
 					for i := lastId; i <= context.id; i++ {
@@ -353,7 +351,6 @@ func tryCorrectErrors(currentState *moduleState, encoder *rs.FEC, m dsl.Module, 
 		readys = append(readys, rd.DeepCopy())
 	}
 
-	currentState.decodeAttempts++
 	success, res := decode(n, f, currentState.readys)
 	if success {
 		size := binary.LittleEndian.Uint32(res[:4])
@@ -381,7 +378,6 @@ func initialize(state *map[int64]*moduleState, id int64, n, f int) {
 			readyMessagesCount:    make(map[string]int),
 			readyMaxAccumulator:   SingleAccumulator{},
 			nextDecodeAttempt:     n - f,
-			decodeAttempts:        0,
 		}
 	}
 }
