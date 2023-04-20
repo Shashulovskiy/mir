@@ -8,12 +8,12 @@ package brbct
 //	brbctpbdsl "github.com/filecoin-project/mir/pkg/pb/brbctpb/dsl"
 //	brbmsgs "github.com/filecoin-project/mir/pkg/pb/brbctpb/msgs"
 //	brbpbdsl "github.com/filecoin-project/mir/pkg/pb/brbpb/dsl"
+//	"github.com/filecoin-project/mir/pkg/pb/codingpb"
 //	"github.com/filecoin-project/mir/pkg/pb/commonpb"
 //	eventpbdsl "github.com/filecoin-project/mir/pkg/pb/eventpb/dsl"
 //	t "github.com/filecoin-project/mir/pkg/types"
 //	"github.com/filecoin-project/mir/pkg/util/mathutil"
-//	"github.com/pkg/errors"
-//	rs_ezpwd "github.com/vivint/infectious"
+//	rs "github.com/vivint/infectious"
 //	"strconv"
 //)
 //
@@ -25,6 +25,7 @@ package brbct
 //	Crypto              t.ModuleID
 //	Hasher              t.ModuleID
 //	MerkleProofVerifier t.ModuleID
+//	Coder               t.ModuleID
 //}
 //
 //// DefaultModuleConfig returns a valid module config with default names for all modules.
@@ -36,6 +37,7 @@ package brbct
 //		Crypto:              "crypto",
 //		Hasher:              "hasher",
 //		MerkleProofVerifier: "merkleverify",
+//		Coder:               "coder",
 //	}
 //}
 //
@@ -68,7 +70,7 @@ package brbct
 //	sentReady bool
 //	delivered bool
 //
-//	echos                    map[string][]rs_ezpwd.Share
+//	echos                    map[string][]rs.Share
 //	receivedEcho             []bool
 //	echoMessagesCount        map[string]int
 //	echoMessagesAccumulator  Accumulator
@@ -79,12 +81,6 @@ package brbct
 //
 //func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 //	m := dsl.NewModule(mc.Self)
-//
-//	encoder, err := rs_ezpwd.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
-//
-//	if err != nil {
-//		return nil, errors.Wrap(err, "Unable to create coder")
-//	}
 //
 //	// upon event <brb, Init> do
 //	state := make(map[int64]*brbHashModuleState)
@@ -105,25 +101,17 @@ package brbct
 //		binary.LittleEndian.PutUint32(data, uint32(len(hdata)))
 //		copy(data[4:], hdata)
 //
-//		shardSize := len(data) / nDataShards
+//		dsl.EncodeRequest(m, mc.Coder, int64(params.GetN()), int64(nDataShards), data, &encodeDataContext{id: id})
 //
-//		encoded := make([][]byte, params.GetN())
+//		return nil
+//	})
 //
-//		dataWithPadding := make([]byte, nDataShards*shardSize)
-//		copy(dataWithPadding, data)
-//
-//		output := func(s rs_ezpwd.Share) {
-//			encoded[s.Number] = make([]byte, len(s.Data))
-//			copy(encoded[s.Number], s.Data)
+//	dsl.UponEncodeResult(m, func(encoded [][]byte, context *encodeDataContext) error {
+//		if context.id <= lastId {
+//			return nil
 //		}
 //
-//		err := encoder.Encode(dataWithPadding, output)
-//
-//		if err != nil {
-//			return err
-//		}
-//
-//		dsl.MerkleBuildRequest(m, mc.MerkleProofVerifier, encoded, &hashInitialMessageContext{id: id, data: encoded})
+//		dsl.MerkleBuildRequest(m, mc.MerkleProofVerifier, encoded, &hashInitialMessageContext{id: context.id, data: encoded})
 //
 //		return nil
 //	})
@@ -202,7 +190,7 @@ package brbct
 //			hash := string(context.rootHash)
 //			if !currentState.receivedEcho[context.fromId] {
 //				currentState.receivedEcho[context.fromId] = true
-//				currentState.echos[hash] = append(currentState.echos[hash], rs_ezpwd.Share{
+//				currentState.echos[hash] = append(currentState.echos[hash], rs.Share{
 //					Number: int(context.fromId),
 //					Data:   context.chunk,
 //				})
@@ -266,26 +254,39 @@ package brbct
 //			}
 //
 //			if currentState.readyMessagesAccumulator.count >= params.GetN()-params.GetF() && currentState.echoMessagesAccumulator.count >= params.GetN()-2*params.GetF() && !currentState.delivered {
-//				output := make([]byte, len(currentState.echos[currentState.echoMessagesAccumulator.value][0].Data)*(params.GetN()-2*params.GetF()))
-//				err := encoder.Rebuild(currentState.echos[currentState.echoMessagesAccumulator.value], func(s rs_ezpwd.Share) {
-//					copy(output[s.Number*len(s.Data):], s.Data)
-//				})
-//				if err != nil {
-//					return err
+//				shares := make([]*codingpb.Share, 0)
+//				for _, rd := range currentState.echos[currentState.echoMessagesAccumulator.value] {
+//					shares = append(shares, &codingpb.Share{
+//						Number: int64(rd.Number),
+//						Chunk:  rd.Data,
+//					})
 //				}
 //
-//				size := binary.LittleEndian.Uint32(output[:4])
-//				currentState.delivered = true
-//				output = output[4 : 4+size]
-//				brbpbdsl.Deliver(m, mc.Consumer, id, output)
-//				if id > lastId {
-//					for i := lastId; i <= id; i++ {
-//						delete(state, i)
-//					}
-//					lastId = id
-//				}
+//				dsl.RebuildRequest(m, mc.Coder, int64(params.GetN()), int64(params.GetN()-2*params.GetF()), shares, &rebuildDataContext{id: id})
 //			}
 //		}
+//		return nil
+//	})
+//
+//	dsl.UponRebuildResult(m, func(success bool, decoded []byte, context *rebuildDataContext) error {
+//		if context.id <= lastId {
+//			return nil
+//		}
+//		if !success {
+//			panic("Unable to rebuild?")
+//		}
+//
+//		size := binary.LittleEndian.Uint32(decoded[:4])
+//		state[context.id].delivered = true
+//		decoded = decoded[4 : 4+size]
+//		brbpbdsl.Deliver(m, mc.Consumer, context.id, decoded)
+//		if context.id > lastId {
+//			for i := lastId; i <= context.id; i++ {
+//				delete(state, i)
+//			}
+//			lastId = context.id
+//		}
+//
 //		return nil
 //	})
 //
@@ -298,7 +299,7 @@ package brbct
 //			sentEcho:                 false,
 //			sentReady:                false,
 //			delivered:                false,
-//			echos:                    make(map[string][]rs_ezpwd.Share),
+//			echos:                    make(map[string][]rs.Share),
 //			receivedEcho:             make([]bool, n),
 //			echoMessagesCount:        make(map[string]int),
 //			echoMessagesAccumulator:  Accumulator{value: "", count: -1},
@@ -307,6 +308,14 @@ package brbct
 //			readyMessagesAccumulator: Accumulator{value: "", count: -1},
 //		}
 //	}
+//}
+//
+//type encodeDataContext struct {
+//	id int64
+//}
+//
+//type rebuildDataContext struct {
+//	id int64
 //}
 //
 //type hashInitialMessageContext struct {
