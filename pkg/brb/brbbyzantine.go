@@ -88,7 +88,7 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 func Corrupt(data []byte) []byte {
 	corrupted := make([]byte, len(data))
 	for i := range corrupted {
-		if i == len(data)/2 {
+		if i == len(data)-1 {
 			corrupted[i] = 1
 		} else {
 			corrupted[i] = data[i]
