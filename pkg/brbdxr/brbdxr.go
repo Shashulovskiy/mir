@@ -278,19 +278,22 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			// Online error correction
 			if len(currentState.readys) > 2*params.GetF() && len(currentState.readys) > currentState.lastDecodeAttempt && currentState.delivered == false {
 				currentState.lastDecodeAttempt = len(currentState.readys)
-				output := make([]byte, 0)
+				output := make([]byte, len(currentState.readys[0].Data)*(params.GetN()-2*params.GetF()))
 
 				readys := make([]rs.Share, 0)
 				for _, rd := range currentState.readys {
 					readys = append(readys, rd.DeepCopy())
 				}
 
-				res, err := encoder.Decode(output, readys)
-				if err == nil {
-					size := binary.LittleEndian.Uint32(res[:4])
-					res = res[4 : 4+size]
+				err := encoder.Rebuild(readys, func(s rs.Share) {
+					copy(output[s.Number*len(s.Data):], s.Data)
+				})
 
-					dsl.HashOneMessage(m, mc.Hasher, [][]byte{res}, &hashVerificationContext{id: id, output: res})
+				if err == nil {
+					size := binary.LittleEndian.Uint32(output[:4])
+					output = output[4 : 4+size]
+
+					dsl.HashOneMessage(m, mc.Hasher, [][]byte{output}, &hashVerificationContext{id: id, output: output})
 				}
 			}
 		}
