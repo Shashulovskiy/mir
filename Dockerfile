@@ -8,5 +8,5 @@ RUN go mod download
 
 COPY . .
 
-CMD GOOS=linux GOARCH=amd64 go run ./samples/brb-channel tests none
+CMD go run ./samples/brb-channel tests none
 #CMD [". /node"]
