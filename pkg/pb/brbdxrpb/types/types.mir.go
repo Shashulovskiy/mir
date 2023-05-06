@@ -105,12 +105,14 @@ func (*Message) MirReflect() mirreflect.Type {
 
 type StartMessage struct {
 	Id   int64
+	N    int64
 	Data []uint8
 }
 
 func StartMessageFromPb(pb *brbdxrpb.StartMessage) *StartMessage {
 	return &StartMessage{
 		Id:   pb.Id,
+		N:    pb.N,
 		Data: pb.Data,
 	}
 }
@@ -118,6 +120,7 @@ func StartMessageFromPb(pb *brbdxrpb.StartMessage) *StartMessage {
 func (m *StartMessage) Pb() *brbdxrpb.StartMessage {
 	return &brbdxrpb.StartMessage{
 		Id:   m.Id,
+		N:    m.N,
 		Data: m.Data,
 	}
 }
@@ -128,6 +131,7 @@ func (*StartMessage) MirReflect() mirreflect.Type {
 
 type EchoMessage struct {
 	Id    int64
+	N     int64
 	Hash  []uint8
 	Chunk []uint8
 }
@@ -135,6 +139,7 @@ type EchoMessage struct {
 func EchoMessageFromPb(pb *brbdxrpb.EchoMessage) *EchoMessage {
 	return &EchoMessage{
 		Id:    pb.Id,
+		N:     pb.N,
 		Hash:  pb.Hash,
 		Chunk: pb.Chunk,
 	}
@@ -143,6 +148,7 @@ func EchoMessageFromPb(pb *brbdxrpb.EchoMessage) *EchoMessage {
 func (m *EchoMessage) Pb() *brbdxrpb.EchoMessage {
 	return &brbdxrpb.EchoMessage{
 		Id:    m.Id,
+		N:     m.N,
 		Hash:  m.Hash,
 		Chunk: m.Chunk,
 	}
@@ -154,6 +160,7 @@ func (*EchoMessage) MirReflect() mirreflect.Type {
 
 type ReadyMessage struct {
 	Id    int64
+	N     int64
 	Hash  []uint8
 	Chunk []uint8
 }
@@ -161,6 +168,7 @@ type ReadyMessage struct {
 func ReadyMessageFromPb(pb *brbdxrpb.ReadyMessage) *ReadyMessage {
 	return &ReadyMessage{
 		Id:    pb.Id,
+		N:     pb.N,
 		Hash:  pb.Hash,
 		Chunk: pb.Chunk,
 	}
@@ -169,6 +177,7 @@ func ReadyMessageFromPb(pb *brbdxrpb.ReadyMessage) *ReadyMessage {
 func (m *ReadyMessage) Pb() *brbdxrpb.ReadyMessage {
 	return &brbdxrpb.ReadyMessage{
 		Id:    m.Id,
+		N:     m.N,
 		Hash:  m.Hash,
 		Chunk: m.Chunk,
 	}

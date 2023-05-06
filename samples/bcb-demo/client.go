@@ -112,7 +112,7 @@ func run() error {
 	}
 
 	// control module reads the user input from the console and processes it.
-	control := newControlModule( /*isLeader=*/ args.OwnID == nodeIDs[leaderNode])
+	control := newControlModule( /*isLeader=*/ args.OwnID == nodeIDs[leaderNode], nodeNumber)
 	hasher := mirCrypto.NewHasher(crypto.SHA1)
 
 	m := map[t.ModuleID]modules.Module{

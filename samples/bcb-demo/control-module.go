@@ -16,13 +16,15 @@ type controlModule struct {
 	eventsOut chan *events.EventList
 	isLeader  bool
 	lastId    int
+	n         int64
 }
 
-func newControlModule(isLeader bool) modules.ActiveModule {
+func newControlModule(isLeader bool, n int64) modules.ActiveModule {
 	return &controlModule{
 		eventsOut: make(chan *events.EventList),
 		isLeader:  isLeader,
 		lastId:    1,
+		n:         n,
 	}
 }
 
@@ -90,6 +92,7 @@ func (m *controlModule) readMessageFromConsole() error {
 				Type: &brbpb.Event_Request{
 					Request: &brbpb.BroadcastRequest{
 						Id:   int64(m.lastId),
+						N:    m.n,
 						Data: []byte(scanner.Text()),
 					},
 				},

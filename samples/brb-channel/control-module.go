@@ -18,7 +18,7 @@ type controlModule struct {
 	sentMessages              int64
 	isLeader                  bool
 	currentBenchmark          *Benchmark
-	broadcastRequestGenerator func(int64, *[]byte, string) *events.EventList
+	broadcastRequestGenerator func(int64, int64, *[]byte, string) *events.EventList
 	broadcastDeliverValidator func([]byte)
 	tests                     []*Benchmark
 	lastTest                  int
@@ -31,7 +31,7 @@ type testResult struct {
 	messageSize int64
 }
 
-func newControlModule(isLeader bool, broadcastRequestGenerator func(int64, *[]byte, string) *events.EventList, broadcastDeliverValidator func([]byte), tests []*Benchmark) modules.ActiveModule {
+func newControlModule(isLeader bool, broadcastRequestGenerator func(int64, int64, *[]byte, string) *events.EventList, broadcastDeliverValidator func([]byte), tests []*Benchmark) modules.ActiveModule {
 	return &controlModule{
 		eventsOut:                 make(chan *events.EventList),
 		lastId:                    0,
@@ -99,7 +99,7 @@ func (m *controlModule) newIteration() {
 				//p := profile.Start(profile.CPUProfile, profile.ProfilePath(fmt.Sprintf("./%s_%d/", m.currentBenchmark.algorithm, m.currentBenchmark.messageSize)))
 				m.lastId++
 				m.sentMessages++
-				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, &m.currentBenchmark.message, m.currentBenchmark.algorithm)
+				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, m.currentBenchmark.n, &m.currentBenchmark.message, m.currentBenchmark.algorithm)
 				go func() {
 					time.Sleep(m.currentBenchmark.duration)
 					fmt.Printf("Total Iterations for %s msgSize=%d: %d\n", m.currentBenchmark.algorithm, m.currentBenchmark.messageSize, m.sentMessages)
@@ -119,7 +119,7 @@ func (m *controlModule) newIteration() {
 			} else {
 				m.lastId++
 				m.sentMessages++
-				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, &m.currentBenchmark.message, m.currentBenchmark.algorithm)
+				m.eventsOut <- m.broadcastRequestGenerator(m.lastId, m.currentBenchmark.n, &m.currentBenchmark.message, m.currentBenchmark.algorithm)
 			}
 		}()
 	}
