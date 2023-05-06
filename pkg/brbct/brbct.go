@@ -47,16 +47,6 @@ type ModuleParams struct {
 	Leader      t.NodeID   // the id of the leader of the instance
 }
 
-// GetN returns the total number of nodes.
-func (params *ModuleParams) GetN() int {
-	return len(params.AllNodes)
-}
-
-// GetF returns the maximum tolerated number of faulty nodes.
-func (params *ModuleParams) GetF() int {
-	return (params.GetN() - 1) / 3
-}
-
 type Accumulator struct {
 	value string
 	count int
@@ -64,6 +54,8 @@ type Accumulator struct {
 
 // brbHashModuleState represents the state of the brb module.
 type brbHashModuleState struct {
+	n int
+
 	sentEcho  bool
 	sentReady bool
 	delivered bool
@@ -80,18 +72,12 @@ type brbHashModuleState struct {
 func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules.PassiveModule, error) {
 	m := dsl.NewModule(mc.Self)
 
-	encoder, err := rs_ezpwd.NewFEC(params.GetN()-2*params.GetF(), params.GetN())
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to create coder")
-	}
-
 	// upon event <brb, Init> do
 	state := make(map[int64]*brbHashModuleState)
 	lastId := int64(0)
 
 	// upon event <brb, Broadcast | m> do
-	brbpbdsl.UponBroadcastRequest(m, func(id int64, hdata []byte) error {
+	brbpbdsl.UponBroadcastRequest(m, func(id, n int64, hdata []byte) error {
 		if id <= lastId {
 			return nil
 		}
@@ -99,7 +85,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			return fmt.Errorf("only the leader node can receive requests")
 		}
 
-		nDataShards := params.GetN() - 2*params.GetF()
+		nDataShards := int(n) - 2*int(getF(n))
 
 		data := make([]byte, mathutil.Pad(4+len(hdata), nDataShards))
 		binary.LittleEndian.PutUint32(data, uint32(len(hdata)))
@@ -107,7 +93,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 
 		shardSize := len(data) / nDataShards
 
-		encoded := make([][]byte, params.GetN())
+		encoded := make([][]byte, n)
 
 		dataWithPadding := make([]byte, nDataShards*shardSize)
 		copy(dataWithPadding, data)
@@ -117,13 +103,19 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			copy(encoded[s.Number], s.Data)
 		}
 
-		err := encoder.Encode(dataWithPadding, output)
+		encoder, err := rs_ezpwd.NewFEC(int(n-2*getF(n)), int(n))
+
+		if err != nil {
+			return errors.Wrap(err, "Unable to create coder")
+		}
+
+		err = encoder.Encode(dataWithPadding, output)
 
 		if err != nil {
 			return err
 		}
 
-		dsl.MerkleBuildRequest(m, mc.MerkleProofVerifier, encoded, &hashInitialMessageContext{id: id, data: encoded})
+		dsl.MerkleBuildRequest(m, mc.MerkleProofVerifier, encoded, &hashInitialMessageContext{id: id, n: n, data: encoded})
 
 		return nil
 	})
@@ -132,23 +124,23 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if context.id <= lastId {
 			return nil
 		}
-		for i, node := range params.AllNodes {
-			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.StartMessage(mc.Self, context.id, context.data[i], rootHash, proofs[i]), []t.NodeID{node})
+		for i, node := range params.AllNodes[:context.n] {
+			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.StartMessage(mc.Self, context.id, context.n, context.data[i], rootHash, proofs[i]), []t.NodeID{node})
 		}
 		return nil
 	})
 
 	// -----------
-	brbctpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
+	brbctpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id, n int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
 		if id <= lastId {
 			return nil
 		}
 		if from == params.Leader {
-			initialize(state, id, params.GetN())
+			initialize(state, id, int(n))
 
 			if !state[id].sentEcho {
 
-				dsl.MerkleProofVerifyRequest(m, mc.MerkleProofVerifier, rootHash, chunk, proof, &hashStartMessageContext{id: id, chunk: chunk, rootHash: rootHash, proof: proof})
+				dsl.MerkleProofVerifyRequest(m, mc.MerkleProofVerifier, rootHash, chunk, proof, &hashStartMessageContext{id: id, n: n, chunk: chunk, rootHash: rootHash, proof: proof})
 
 				return nil
 			} else {
@@ -168,7 +160,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		if result && !currentState.sentEcho {
 			currentState.sentEcho = true
 
-			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.EchoMessage(mc.Self, context.id, context.chunk, context.rootHash, context.proof), params.AllNodes)
+			eventpbdsl.SendMessage(m, mc.Net, brbmsgs.EchoMessage(mc.Self, context.id, context.n, context.chunk, context.rootHash, context.proof), params.AllNodes[:context.n])
 
 			return nil
 		} else {
@@ -177,11 +169,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 	})
 
-	brbctpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
+	brbctpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id, n int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
 		if id <= lastId {
 			return nil
 		}
-		initialize(state, id, params.GetN())
+		initialize(state, id, int(n))
 
 		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
@@ -219,11 +211,11 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		}
 	})
 
-	brbctpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id int64, rootHash []byte) error {
+	brbctpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id, n int64, rootHash []byte) error {
 		if id <= lastId {
 			return nil
 		}
-		initialize(state, id, params.GetN())
+		initialize(state, id, int(n))
 
 		fromId, err := strconv.ParseInt(from.Pb(), 10, 64)
 		if err != nil {
@@ -235,7 +227,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 		currentState := state[id]
 
 		if _, ok := currentState.readyMessagesReceived[stringRepl]; !ok {
-			currentState.readyMessagesReceived[stringRepl] = make([]bool, params.GetN())
+			currentState.readyMessagesReceived[stringRepl] = make([]bool, n)
 		}
 		if !currentState.readyMessagesReceived[stringRepl][fromId] {
 			currentState.readyMessagesReceived[stringRepl][fromId] = true
@@ -255,19 +247,24 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 			if id <= lastId {
 				continue
 			}
-			if (currentState.echoMessagesAccumulator.count >= params.GetN()-params.GetF()) && !currentState.sentReady {
+			if (currentState.echoMessagesAccumulator.count >= currentState.n-int(getF(int64(currentState.n)))) && !currentState.sentReady {
 				currentState.sentReady = true
-				eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, id, []byte(currentState.echoMessagesAccumulator.value)), params.AllNodes)
+				eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, id, int64(currentState.n), []byte(currentState.echoMessagesAccumulator.value)), params.AllNodes[:currentState.n])
 			}
 
-			if (currentState.readyMessagesAccumulator.count >= params.GetN()-2*params.GetF()) && !currentState.sentReady {
+			if (currentState.readyMessagesAccumulator.count >= currentState.n-2*int(getF(int64(currentState.n)))) && !currentState.sentReady {
 				currentState.sentReady = true
-				eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, id, []byte(currentState.readyMessagesAccumulator.value)), params.AllNodes)
+				eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, id, int64(currentState.n), []byte(currentState.readyMessagesAccumulator.value)), params.AllNodes[:currentState.n])
 			}
 
-			if currentState.readyMessagesAccumulator.count >= params.GetN()-params.GetF() && currentState.echoMessagesAccumulator.count >= params.GetN()-2*params.GetF() && !currentState.delivered {
-				output := make([]byte, len(currentState.echos[currentState.echoMessagesAccumulator.value][0].Data)*(params.GetN()-2*params.GetF()))
-				err := encoder.Rebuild(currentState.echos[currentState.echoMessagesAccumulator.value], func(s rs_ezpwd.Share) {
+			if currentState.readyMessagesAccumulator.count >= currentState.n-int(getF(int64(currentState.n))) && currentState.echoMessagesAccumulator.count >= currentState.n-2*int(getF(int64(currentState.n))) && !currentState.delivered {
+				output := make([]byte, len(currentState.echos[currentState.echoMessagesAccumulator.value][0].Data)*(currentState.n-2*int(getF(int64(currentState.n)))))
+				encoder, err := rs_ezpwd.NewFEC(currentState.n-2*int(getF(int64(currentState.n))), currentState.n)
+
+				if err != nil {
+					return errors.Wrap(err, "Unable to create coder")
+				}
+				err = encoder.Rebuild(currentState.echos[currentState.echoMessagesAccumulator.value], func(s rs_ezpwd.Share) {
 					copy(output[s.Number*len(s.Data):], s.Data)
 				})
 				if err != nil {
@@ -295,6 +292,7 @@ func NewModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID) (modules
 func initialize(state map[int64]*brbHashModuleState, id int64, n int) {
 	if _, ok := state[id]; !ok {
 		state[id] = &brbHashModuleState{
+			n:                        n,
 			sentEcho:                 false,
 			sentReady:                false,
 			delivered:                false,
@@ -311,11 +309,13 @@ func initialize(state map[int64]*brbHashModuleState, id int64, n int) {
 
 type hashInitialMessageContext struct {
 	id   int64
+	n    int64
 	data [][]byte
 }
 
 type hashStartMessageContext struct {
 	id       int64
+	n        int64
 	chunk    []byte
 	rootHash []byte
 	proof    *commonpb.MerklePath
@@ -327,4 +327,8 @@ type hashEchoMessageContext struct {
 	chunk    []byte
 	rootHash []byte
 	proof    *commonpb.MerklePath
+}
+
+func getF(n int64) int64 {
+	return (n - 1) / 3
 }

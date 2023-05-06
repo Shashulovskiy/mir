@@ -85,12 +85,14 @@ func (*Event) MirReflect() mirreflect.Type {
 
 type BroadcastRequest struct {
 	Id   int64
+	N    int64
 	Data []uint8
 }
 
 func BroadcastRequestFromPb(pb *brbpb.BroadcastRequest) *BroadcastRequest {
 	return &BroadcastRequest{
 		Id:   pb.Id,
+		N:    pb.N,
 		Data: pb.Data,
 	}
 }
@@ -98,6 +100,7 @@ func BroadcastRequestFromPb(pb *brbpb.BroadcastRequest) *BroadcastRequest {
 func (m *BroadcastRequest) Pb() *brbpb.BroadcastRequest {
 	return &brbpb.BroadcastRequest{
 		Id:   m.Id,
+		N:    m.N,
 		Data: m.Data,
 	}
 }
@@ -228,12 +231,14 @@ func (*Message) MirReflect() mirreflect.Type {
 
 type StartMessage struct {
 	Id   int64
+	N    int64
 	Data []uint8
 }
 
 func StartMessageFromPb(pb *brbpb.StartMessage) *StartMessage {
 	return &StartMessage{
 		Id:   pb.Id,
+		N:    pb.N,
 		Data: pb.Data,
 	}
 }
@@ -241,6 +246,7 @@ func StartMessageFromPb(pb *brbpb.StartMessage) *StartMessage {
 func (m *StartMessage) Pb() *brbpb.StartMessage {
 	return &brbpb.StartMessage{
 		Id:   m.Id,
+		N:    m.N,
 		Data: m.Data,
 	}
 }
@@ -251,12 +257,14 @@ func (*StartMessage) MirReflect() mirreflect.Type {
 
 type EchoMessage struct {
 	Id   int64
+	N    int64
 	Data []uint8
 }
 
 func EchoMessageFromPb(pb *brbpb.EchoMessage) *EchoMessage {
 	return &EchoMessage{
 		Id:   pb.Id,
+		N:    pb.N,
 		Data: pb.Data,
 	}
 }
@@ -264,6 +272,7 @@ func EchoMessageFromPb(pb *brbpb.EchoMessage) *EchoMessage {
 func (m *EchoMessage) Pb() *brbpb.EchoMessage {
 	return &brbpb.EchoMessage{
 		Id:   m.Id,
+		N:    m.N,
 		Data: m.Data,
 	}
 }
@@ -274,12 +283,14 @@ func (*EchoMessage) MirReflect() mirreflect.Type {
 
 type ReadyMessage struct {
 	Id   int64
+	N    int64
 	Data []uint8
 }
 
 func ReadyMessageFromPb(pb *brbpb.ReadyMessage) *ReadyMessage {
 	return &ReadyMessage{
 		Id:   pb.Id,
+		N:    pb.N,
 		Data: pb.Data,
 	}
 }
@@ -287,6 +298,7 @@ func ReadyMessageFromPb(pb *brbpb.ReadyMessage) *ReadyMessage {
 func (m *ReadyMessage) Pb() *brbpb.ReadyMessage {
 	return &brbpb.ReadyMessage{
 		Id:   m.Id,
+		N:    m.N,
 		Data: m.Data,
 	}
 }

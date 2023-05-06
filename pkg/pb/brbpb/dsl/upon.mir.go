@@ -19,9 +19,9 @@ func UponEvent[W types.Event_TypeWrapper[Ev], Ev any](m dsl.Module, handler func
 	})
 }
 
-func UponBroadcastRequest(m dsl.Module, handler func(id int64, data []uint8) error) {
+func UponBroadcastRequest(m dsl.Module, handler func(id int64, n int64, data []uint8) error) {
 	UponEvent[*types.Event_Request](m, func(ev *types.BroadcastRequest) error {
-		return handler(ev.Id, ev.Data)
+		return handler(ev.Id, ev.N, ev.Data)
 	})
 }
 

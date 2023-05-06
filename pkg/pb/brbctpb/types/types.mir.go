@@ -106,6 +106,7 @@ func (*Message) MirReflect() mirreflect.Type {
 
 type StartMessage struct {
 	Id       int64
+	N        int64
 	Chunk    []uint8
 	RootHash []uint8
 	Proof    *commonpb.MerklePath
@@ -114,6 +115,7 @@ type StartMessage struct {
 func StartMessageFromPb(pb *brbctpb.StartMessage) *StartMessage {
 	return &StartMessage{
 		Id:       pb.Id,
+		N:        pb.N,
 		Chunk:    pb.Chunk,
 		RootHash: pb.RootHash,
 		Proof:    pb.Proof,
@@ -123,6 +125,7 @@ func StartMessageFromPb(pb *brbctpb.StartMessage) *StartMessage {
 func (m *StartMessage) Pb() *brbctpb.StartMessage {
 	return &brbctpb.StartMessage{
 		Id:       m.Id,
+		N:        m.N,
 		Chunk:    m.Chunk,
 		RootHash: m.RootHash,
 		Proof:    m.Proof,
@@ -135,6 +138,7 @@ func (*StartMessage) MirReflect() mirreflect.Type {
 
 type EchoMessage struct {
 	Id       int64
+	N        int64
 	Chunk    []uint8
 	RootHash []uint8
 	Proof    *commonpb.MerklePath
@@ -143,6 +147,7 @@ type EchoMessage struct {
 func EchoMessageFromPb(pb *brbctpb.EchoMessage) *EchoMessage {
 	return &EchoMessage{
 		Id:       pb.Id,
+		N:        pb.N,
 		Chunk:    pb.Chunk,
 		RootHash: pb.RootHash,
 		Proof:    pb.Proof,
@@ -152,6 +157,7 @@ func EchoMessageFromPb(pb *brbctpb.EchoMessage) *EchoMessage {
 func (m *EchoMessage) Pb() *brbctpb.EchoMessage {
 	return &brbctpb.EchoMessage{
 		Id:       m.Id,
+		N:        m.N,
 		Chunk:    m.Chunk,
 		RootHash: m.RootHash,
 		Proof:    m.Proof,
@@ -164,12 +170,14 @@ func (*EchoMessage) MirReflect() mirreflect.Type {
 
 type ReadyMessage struct {
 	Id       int64
+	N        int64
 	RootHash []uint8
 }
 
 func ReadyMessageFromPb(pb *brbctpb.ReadyMessage) *ReadyMessage {
 	return &ReadyMessage{
 		Id:       pb.Id,
+		N:        pb.N,
 		RootHash: pb.RootHash,
 	}
 }
@@ -177,6 +185,7 @@ func ReadyMessageFromPb(pb *brbctpb.ReadyMessage) *ReadyMessage {
 func (m *ReadyMessage) Pb() *brbctpb.ReadyMessage {
 	return &brbctpb.ReadyMessage{
 		Id:       m.Id,
+		N:        m.N,
 		RootHash: m.RootHash,
 	}
 }

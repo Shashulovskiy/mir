@@ -21,20 +21,20 @@ func UponMessageReceived[W types.Message_TypeWrapper[M], M any](m dsl.Module, ha
 	})
 }
 
-func UponStartMessageReceived(m dsl.Module, handler func(from types1.NodeID, id int64, data []uint8) error) {
+func UponStartMessageReceived(m dsl.Module, handler func(from types1.NodeID, id int64, n int64, data []uint8) error) {
 	UponMessageReceived[*types.Message_StartMessage](m, func(from types1.NodeID, msg *types.StartMessage) error {
-		return handler(from, msg.Id, msg.Data)
+		return handler(from, msg.Id, msg.N, msg.Data)
 	})
 }
 
-func UponEchoMessageReceived(m dsl.Module, handler func(from types1.NodeID, id int64, hash []uint8, chunk []uint8) error) {
+func UponEchoMessageReceived(m dsl.Module, handler func(from types1.NodeID, id int64, n int64, hash []uint8, chunk []uint8) error) {
 	UponMessageReceived[*types.Message_EchoMessage](m, func(from types1.NodeID, msg *types.EchoMessage) error {
-		return handler(from, msg.Id, msg.Hash, msg.Chunk)
+		return handler(from, msg.Id, msg.N, msg.Hash, msg.Chunk)
 	})
 }
 
-func UponReadyMessageReceived(m dsl.Module, handler func(from types1.NodeID, id int64, hash []uint8, chunk []uint8) error) {
+func UponReadyMessageReceived(m dsl.Module, handler func(from types1.NodeID, id int64, n int64, hash []uint8, chunk []uint8) error) {
 	UponMessageReceived[*types.Message_ReadyMessage](m, func(from types1.NodeID, msg *types.ReadyMessage) error {
-		return handler(from, msg.Id, msg.Hash, msg.Chunk)
+		return handler(from, msg.Id, msg.N, msg.Hash, msg.Chunk)
 	})
 }

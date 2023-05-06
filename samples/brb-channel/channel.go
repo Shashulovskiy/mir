@@ -178,7 +178,7 @@ func run() error {
 
 	control := newControlModule(
 		/*isLeader=*/ ownID == nodeIDs[leaderNode],
-		func(id int64, message *[]byte, algorithm string) *events.EventList {
+		func(id, n int64, message *[]byte, algorithm string) *events.EventList {
 			return events.ListOf(&eventpb.Event{
 				DestModule: algorithm,
 				Type: &eventpb.Event_Brb{
@@ -186,6 +186,7 @@ func run() error {
 						Type: &brbpb.Event_Request{
 							Request: &brbpb.BroadcastRequest{
 								Id:   id,
+								N:    n,
 								Data: *message,
 							},
 						},
@@ -357,9 +358,14 @@ func parseTests(testFile string) []*Benchmark {
 			panic(err)
 		}
 		algorithm := split[2]
+		n, err := strconv.ParseInt(split[2], 10, 64)
+		if err != nil {
+			panic(err)
+		}
 
 		benchmarks = append(benchmarks, &Benchmark{
 			messageSize: msgSize,
+			n:           n,
 			duration:    time.Duration(duration * time.Second.Nanoseconds()),
 			algorithm:   algorithm,
 		})

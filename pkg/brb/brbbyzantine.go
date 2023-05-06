@@ -20,7 +20,7 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 	lastId := int64(-1)
 	states := make(map[int64]*byzantineModuleState)
 
-	brbpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id int64, data []byte) error {
+	brbpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id, n int64, data []byte) error {
 		if id < lastId {
 			return nil
 		}
@@ -42,14 +42,14 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 				if !states[id].sentEcho {
 					state := states[id]
 					state.sentEcho = true
-					eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.EchoMessage(mc.Self, id, Corrupt(data)), params.AllNodes)
+					eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.EchoMessage(mc.Self, id, n, Corrupt(data)), params.AllNodes[:n])
 				}
 			}
 		}
 		return nil
 	})
 
-	brbpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id int64, data []byte) error {
+	brbpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id, n int64, data []byte) error {
 		if id < lastId {
 			return nil
 		}
@@ -71,14 +71,14 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 				if !states[id].sentReady {
 					state := states[id]
 					state.sentReady = true
-					eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.ReadyMessage(mc.Self, id, Corrupt(data)), params.AllNodes)
+					eventpbdsl.SendMessage(m, mc.Net, brbpbmsgs.ReadyMessage(mc.Self, id, n, Corrupt(data)), params.AllNodes[:n])
 				}
 			}
 		}
 		return nil
 	})
 
-	brbpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id int64, data []byte) error {
+	brbpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id, n int64, data []byte) error {
 		return nil
 	})
 

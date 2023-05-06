@@ -23,7 +23,7 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 	states := make(map[int64]*byzantineModuleState)
 
 	// -----------
-	brbctpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
+	brbctpbdsl.UponStartMessageReceived(m, func(from t.NodeID, id, n int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
 		if id < lastId {
 			return nil
 		}
@@ -44,14 +44,14 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 				if !states[id].sentEcho {
 					state := states[id]
 					state.sentEcho = true
-					eventpbdsl.SendMessage(m, mc.Net, brbmsgs.EchoMessage(mc.Self, id, brb.Corrupt(chunk), rootHash, proof), params.AllNodes)
+					eventpbdsl.SendMessage(m, mc.Net, brbmsgs.EchoMessage(mc.Self, id, n, brb.Corrupt(chunk), rootHash, proof), params.AllNodes[:n])
 				}
 			}
 		}
 		return nil
 	})
 
-	brbctpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
+	brbctpbdsl.UponEchoMessageReceived(m, func(from t.NodeID, id, n int64, chunk []byte, rootHash []byte, proof *commonpb.MerklePath) error {
 		if id < lastId {
 			return nil
 		}
@@ -72,14 +72,14 @@ func NewByzantineModule(mc *ModuleConfig, params *ModuleParams, nodeID t.NodeID,
 				if !states[id].sentReady {
 					state := states[id]
 					state.sentReady = true
-					eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, id, brb.Corrupt(rootHash)), params.AllNodes)
+					eventpbdsl.SendMessage(m, mc.Net, brbmsgs.ReadyMessage(mc.Self, id, n, brb.Corrupt(rootHash)), params.AllNodes[:n])
 				}
 			}
 		}
 		return nil
 	})
 
-	brbctpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id int64, rootHash []byte) error {
+	brbctpbdsl.UponReadyMessageReceived(m, func(from t.NodeID, id, n int64, rootHash []byte) error {
 		return nil
 	})
 

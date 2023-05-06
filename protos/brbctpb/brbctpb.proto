@@ -29,9 +29,10 @@ message StartMessage {
   option (net.message) = true;
 
   int64 id = 1;
-  bytes chunk = 2;
-  bytes root_hash = 3;
-  commonpb.MerklePath proof = 4;
+  int64 n  = 2;
+  bytes chunk = 3;
+  bytes root_hash = 4;
+  commonpb.MerklePath proof = 5;
 }
 
 
@@ -39,14 +40,16 @@ message EchoMessage {
   option (net.message) = true;
 
   int64 id = 1;
-  bytes chunk = 2;
-  bytes root_hash = 3;
-  commonpb.MerklePath proof = 4;
+  int64 n  = 2;
+  bytes chunk = 3;
+  bytes root_hash = 4;
+  commonpb.MerklePath proof = 5;
 }
 
 message ReadyMessage {
   option (net.message) = true;
 
   int64 id = 1;
-  bytes root_hash = 2;
+  int64 n  = 2;
+  bytes root_hash = 3;
 }
