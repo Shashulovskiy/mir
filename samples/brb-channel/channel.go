@@ -358,7 +358,7 @@ func parseTests(testFile string) []*Benchmark {
 			panic(err)
 		}
 		algorithm := split[2]
-		n, err := strconv.ParseInt(split[2], 10, 64)
+		n, err := strconv.ParseInt(split[3], 10, 64)
 		if err != nil {
 			panic(err)
 		}
