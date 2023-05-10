@@ -44,6 +44,19 @@ ezpwd::RS<255, 255 - 2 * 17> coder17;
 ezpwd::RS<255, 255 - 2 * 18> coder18;
 ezpwd::RS<255, 255 - 2 * 19> coder19;
 ezpwd::RS<255, 255 - 2 * 20> coder20;
+ezpwd::RS<255, 255 - 2 * 21> coder21;
+ezpwd::RS<255, 255 - 2 * 22> coder22;
+ezpwd::RS<255, 255 - 2 * 23> coder23;
+ezpwd::RS<255, 255 - 2 * 24> coder24;
+ezpwd::RS<255, 255 - 2 * 25> coder25;
+ezpwd::RS<255, 255 - 2 * 26> coder26;
+ezpwd::RS<255, 255 - 2 * 27> coder27;
+ezpwd::RS<255, 255 - 2 * 28> coder28;
+ezpwd::RS<255, 255 - 2 * 29> coder29;
+ezpwd::RS<255, 255 - 2 * 30> coder30;
+ezpwd::RS<255, 255 - 2 * 31> coder31;
+ezpwd::RS<255, 255 - 2 * 32> coder32;
+ezpwd::RS<255, 255 - 2 * 33> coder33;
 
 std::vector<uint8_t> encode(uint32_t k, std::vector<uint8_t> &data) {
     switch (k) {
@@ -87,6 +100,32 @@ std::vector<uint8_t> encode(uint32_t k, std::vector<uint8_t> &data) {
             return encode<19>(coder19, data);
         case 20:
             return encode<20>(coder20, data);
+        case 21:
+            return encode<21>(coder21, data);
+        case 22:
+            return encode<22>(coder22, data);
+        case 23:
+            return encode<23>(coder23, data);
+        case 24:
+            return encode<24>(coder24, data);
+        case 25:
+            return encode<25>(coder25, data);
+        case 26:
+            return encode<26>(coder26, data);
+        case 27:
+            return encode<27>(coder27, data);
+        case 28:
+            return encode<28>(coder28, data);
+        case 29:
+            return encode<29>(coder29, data);
+        case 30:
+            return encode<30>(coder30, data);
+        case 31:
+            return encode<31>(coder31, data);
+        case 32:
+            return encode<32>(coder32, data);
+        case 33:
+            return encode<33>(coder33, data);
         default:
             return {};
     }
@@ -132,8 +171,21 @@ std::vector<uint8_t> decode(uint32_t k, std::vector<uint8_t> &data, std::vector<
             return decode<18>(coder18, data, missing);
         case 19:
             return decode<19>(coder19, data, missing);
-        case 20:
-            return decode<20>(coder20, data, missing);
+        case 20: return decode<20>(coder20, data, missing);
+        case 21: return decode<21>(coder21, data, missing);
+        case 22: return decode<22>(coder22, data, missing);
+        case 23: return decode<23>(coder23, data, missing);
+        case 24: return decode<24>(coder24, data, missing);
+        case 25: return decode<25>(coder25, data, missing);
+        case 26: return decode<26>(coder26, data, missing);
+        case 27: return decode<27>(coder27, data, missing);
+        case 28: return decode<28>(coder28, data, missing);
+        case 29: return decode<29>(coder29, data, missing);
+        case 30: return decode<30>(coder30, data, missing);
+        case 31: return decode<31>(coder31, data, missing);
+        case 32: return decode<32>(coder32, data, missing);
+        case 33: return decode<33>(coder33, data, missing);
+
         default:
             return {};
     }
