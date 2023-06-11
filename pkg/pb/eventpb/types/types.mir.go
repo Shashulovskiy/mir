@@ -1,27 +1,28 @@
 package eventpbtypes
 
 import (
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-
 	mirreflect "github.com/filecoin-project/mir/codegen/mirreflect"
-	types7 "github.com/filecoin-project/mir/codegen/model/types"
+	types9 "github.com/filecoin-project/mir/codegen/model/types"
 	types4 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/batchdbpb/types"
 	types3 "github.com/filecoin-project/mir/pkg/pb/availabilitypb/types"
 	types5 "github.com/filecoin-project/mir/pkg/pb/batchfetcherpb/types"
 	types1 "github.com/filecoin-project/mir/pkg/pb/bcbpb/types"
+	types7 "github.com/filecoin-project/mir/pkg/pb/brbpb/types"
 	checkpointpb "github.com/filecoin-project/mir/pkg/pb/checkpointpb"
-	types8 "github.com/filecoin-project/mir/pkg/pb/contextstorepb/types"
-	types9 "github.com/filecoin-project/mir/pkg/pb/dslpb/types"
+	types8 "github.com/filecoin-project/mir/pkg/pb/codingpb/types"
+	types10 "github.com/filecoin-project/mir/pkg/pb/contextstorepb/types"
+	types11 "github.com/filecoin-project/mir/pkg/pb/dslpb/types"
 	eventpb "github.com/filecoin-project/mir/pkg/pb/eventpb"
 	factorymodulepb "github.com/filecoin-project/mir/pkg/pb/factorymodulepb"
 	isspb "github.com/filecoin-project/mir/pkg/pb/isspb"
 	types2 "github.com/filecoin-project/mir/pkg/pb/mempoolpb/types"
-	types10 "github.com/filecoin-project/mir/pkg/pb/messagepb/types"
+	types12 "github.com/filecoin-project/mir/pkg/pb/messagepb/types"
 	ordererspb "github.com/filecoin-project/mir/pkg/pb/ordererspb"
 	pingpongpb "github.com/filecoin-project/mir/pkg/pb/pingpongpb"
 	types6 "github.com/filecoin-project/mir/pkg/pb/threshcryptopb/types"
 	types "github.com/filecoin-project/mir/pkg/types"
 	reflectutil "github.com/filecoin-project/mir/pkg/util/reflectutil"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type Event struct {
@@ -121,6 +122,28 @@ func Event_TypeFromPb(pb eventpb.Event_Type) Event_Type {
 		return &Event_SbEvent{SbEvent: pb.SbEvent}
 	case *eventpb.Event_NewLogFile:
 		return &Event_NewLogFile{NewLogFile: pb.NewLogFile}
+	case *eventpb.Event_Brb:
+		return &Event_Brb{Brb: types7.EventFromPb(pb.Brb)}
+	case *eventpb.Event_MerkleBuildRequest:
+		return &Event_MerkleBuildRequest{MerkleBuildRequest: pb.MerkleBuildRequest}
+	case *eventpb.Event_MerkleBuildResult:
+		return &Event_MerkleBuildResult{MerkleBuildResult: pb.MerkleBuildResult}
+	case *eventpb.Event_MerkleVerifyRequest:
+		return &Event_MerkleVerifyRequest{MerkleVerifyRequest: pb.MerkleVerifyRequest}
+	case *eventpb.Event_MerkleVerifyResult:
+		return &Event_MerkleVerifyResult{MerkleVerifyResult: pb.MerkleVerifyResult}
+	case *eventpb.Event_EncodeRequest:
+		return &Event_EncodeRequest{EncodeRequest: types8.EncodeRequestFromPb(pb.EncodeRequest)}
+	case *eventpb.Event_EncodeResult:
+		return &Event_EncodeResult{EncodeResult: types8.EncodeResultFromPb(pb.EncodeResult)}
+	case *eventpb.Event_DecodeRequest:
+		return &Event_DecodeRequest{DecodeRequest: types8.DecodeRequestFromPb(pb.DecodeRequest)}
+	case *eventpb.Event_DecodeResult:
+		return &Event_DecodeResult{DecodeResult: types8.DecodeResultFromPb(pb.DecodeResult)}
+	case *eventpb.Event_RebuildRequest:
+		return &Event_RebuildRequest{RebuildRequest: types8.RebuildRequestFromPb(pb.RebuildRequest)}
+	case *eventpb.Event_RebuildResult:
+		return &Event_RebuildResult{RebuildResult: types8.RebuildResultFromPb(pb.RebuildResult)}
 	case *eventpb.Event_TestingString:
 		return &Event_TestingString{TestingString: pb.TestingString}
 	case *eventpb.Event_TestingUint:
@@ -831,6 +854,204 @@ func (*Event_NewLogFile) MirReflect() mirreflect.Type {
 	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_NewLogFile]()}
 }
 
+type Event_Brb struct {
+	Brb *types7.Event
+}
+
+func (*Event_Brb) isEvent_Type() {}
+
+func (w *Event_Brb) Unwrap() *types7.Event {
+	return w.Brb
+}
+
+func (w *Event_Brb) Pb() eventpb.Event_Type {
+	return &eventpb.Event_Brb{Brb: (w.Brb).Pb()}
+}
+
+func (*Event_Brb) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_Brb]()}
+}
+
+type Event_MerkleBuildRequest struct {
+	MerkleBuildRequest *eventpb.MerkleBuildRequest
+}
+
+func (*Event_MerkleBuildRequest) isEvent_Type() {}
+
+func (w *Event_MerkleBuildRequest) Unwrap() *eventpb.MerkleBuildRequest {
+	return w.MerkleBuildRequest
+}
+
+func (w *Event_MerkleBuildRequest) Pb() eventpb.Event_Type {
+	return &eventpb.Event_MerkleBuildRequest{MerkleBuildRequest: w.MerkleBuildRequest}
+}
+
+func (*Event_MerkleBuildRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkleBuildRequest]()}
+}
+
+type Event_MerkleBuildResult struct {
+	MerkleBuildResult *eventpb.MerkleBuildResult
+}
+
+func (*Event_MerkleBuildResult) isEvent_Type() {}
+
+func (w *Event_MerkleBuildResult) Unwrap() *eventpb.MerkleBuildResult {
+	return w.MerkleBuildResult
+}
+
+func (w *Event_MerkleBuildResult) Pb() eventpb.Event_Type {
+	return &eventpb.Event_MerkleBuildResult{MerkleBuildResult: w.MerkleBuildResult}
+}
+
+func (*Event_MerkleBuildResult) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkleBuildResult]()}
+}
+
+type Event_MerkleVerifyRequest struct {
+	MerkleVerifyRequest *eventpb.MerkleVerifyRequest
+}
+
+func (*Event_MerkleVerifyRequest) isEvent_Type() {}
+
+func (w *Event_MerkleVerifyRequest) Unwrap() *eventpb.MerkleVerifyRequest {
+	return w.MerkleVerifyRequest
+}
+
+func (w *Event_MerkleVerifyRequest) Pb() eventpb.Event_Type {
+	return &eventpb.Event_MerkleVerifyRequest{MerkleVerifyRequest: w.MerkleVerifyRequest}
+}
+
+func (*Event_MerkleVerifyRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkleVerifyRequest]()}
+}
+
+type Event_MerkleVerifyResult struct {
+	MerkleVerifyResult *eventpb.MerkleVerifyResult
+}
+
+func (*Event_MerkleVerifyResult) isEvent_Type() {}
+
+func (w *Event_MerkleVerifyResult) Unwrap() *eventpb.MerkleVerifyResult {
+	return w.MerkleVerifyResult
+}
+
+func (w *Event_MerkleVerifyResult) Pb() eventpb.Event_Type {
+	return &eventpb.Event_MerkleVerifyResult{MerkleVerifyResult: w.MerkleVerifyResult}
+}
+
+func (*Event_MerkleVerifyResult) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_MerkleVerifyResult]()}
+}
+
+type Event_EncodeRequest struct {
+	EncodeRequest *types8.EncodeRequest
+}
+
+func (*Event_EncodeRequest) isEvent_Type() {}
+
+func (w *Event_EncodeRequest) Unwrap() *types8.EncodeRequest {
+	return w.EncodeRequest
+}
+
+func (w *Event_EncodeRequest) Pb() eventpb.Event_Type {
+	return &eventpb.Event_EncodeRequest{EncodeRequest: (w.EncodeRequest).Pb()}
+}
+
+func (*Event_EncodeRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_EncodeRequest]()}
+}
+
+type Event_EncodeResult struct {
+	EncodeResult *types8.EncodeResult
+}
+
+func (*Event_EncodeResult) isEvent_Type() {}
+
+func (w *Event_EncodeResult) Unwrap() *types8.EncodeResult {
+	return w.EncodeResult
+}
+
+func (w *Event_EncodeResult) Pb() eventpb.Event_Type {
+	return &eventpb.Event_EncodeResult{EncodeResult: (w.EncodeResult).Pb()}
+}
+
+func (*Event_EncodeResult) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_EncodeResult]()}
+}
+
+type Event_DecodeRequest struct {
+	DecodeRequest *types8.DecodeRequest
+}
+
+func (*Event_DecodeRequest) isEvent_Type() {}
+
+func (w *Event_DecodeRequest) Unwrap() *types8.DecodeRequest {
+	return w.DecodeRequest
+}
+
+func (w *Event_DecodeRequest) Pb() eventpb.Event_Type {
+	return &eventpb.Event_DecodeRequest{DecodeRequest: (w.DecodeRequest).Pb()}
+}
+
+func (*Event_DecodeRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_DecodeRequest]()}
+}
+
+type Event_DecodeResult struct {
+	DecodeResult *types8.DecodeResult
+}
+
+func (*Event_DecodeResult) isEvent_Type() {}
+
+func (w *Event_DecodeResult) Unwrap() *types8.DecodeResult {
+	return w.DecodeResult
+}
+
+func (w *Event_DecodeResult) Pb() eventpb.Event_Type {
+	return &eventpb.Event_DecodeResult{DecodeResult: (w.DecodeResult).Pb()}
+}
+
+func (*Event_DecodeResult) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_DecodeResult]()}
+}
+
+type Event_RebuildRequest struct {
+	RebuildRequest *types8.RebuildRequest
+}
+
+func (*Event_RebuildRequest) isEvent_Type() {}
+
+func (w *Event_RebuildRequest) Unwrap() *types8.RebuildRequest {
+	return w.RebuildRequest
+}
+
+func (w *Event_RebuildRequest) Pb() eventpb.Event_Type {
+	return &eventpb.Event_RebuildRequest{RebuildRequest: (w.RebuildRequest).Pb()}
+}
+
+func (*Event_RebuildRequest) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_RebuildRequest]()}
+}
+
+type Event_RebuildResult struct {
+	RebuildResult *types8.RebuildResult
+}
+
+func (*Event_RebuildResult) isEvent_Type() {}
+
+func (w *Event_RebuildResult) Unwrap() *types8.RebuildResult {
+	return w.RebuildResult
+}
+
+func (w *Event_RebuildResult) Pb() eventpb.Event_Type {
+	return &eventpb.Event_RebuildResult{RebuildResult: (w.RebuildResult).Pb()}
+}
+
+func (*Event_RebuildResult) MirReflect() mirreflect.Type {
+	return mirreflect.TypeImpl{PbType_: reflectutil.TypeOf[*eventpb.Event_RebuildResult]()}
+}
+
 type Event_TestingString struct {
 	TestingString *wrapperspb.StringValue
 }
@@ -870,7 +1091,7 @@ func (*Event_TestingUint) MirReflect() mirreflect.Type {
 func EventFromPb(pb *eventpb.Event) *Event {
 	return &Event{
 		Type: Event_TypeFromPb(pb.Type),
-		Next: types7.ConvertSlice(pb.Next, func(t *eventpb.Event) *Event {
+		Next: types9.ConvertSlice(pb.Next, func(t *eventpb.Event) *Event {
 			return EventFromPb(t)
 		}),
 		DestModule: (types.ModuleID)(pb.DestModule),
@@ -880,7 +1101,7 @@ func EventFromPb(pb *eventpb.Event) *Event {
 func (m *Event) Pb() *eventpb.Event {
 	return &eventpb.Event{
 		Type: (m.Type).Pb(),
-		Next: types7.ConvertSlice(m.Next, func(t *Event) *eventpb.Event {
+		Next: types9.ConvertSlice(m.Next, func(t *Event) *eventpb.Event {
 			return (t).Pb()
 		}),
 		DestModule: (string)(m.DestModule),
@@ -956,9 +1177,9 @@ type SignOrigin_TypeWrapper[T any] interface {
 func SignOrigin_TypeFromPb(pb eventpb.SignOrigin_Type) SignOrigin_Type {
 	switch pb := pb.(type) {
 	case *eventpb.SignOrigin_ContextStore:
-		return &SignOrigin_ContextStore{ContextStore: types8.OriginFromPb(pb.ContextStore)}
+		return &SignOrigin_ContextStore{ContextStore: types10.OriginFromPb(pb.ContextStore)}
 	case *eventpb.SignOrigin_Dsl:
-		return &SignOrigin_Dsl{Dsl: types9.OriginFromPb(pb.Dsl)}
+		return &SignOrigin_Dsl{Dsl: types11.OriginFromPb(pb.Dsl)}
 	case *eventpb.SignOrigin_Checkpoint:
 		return &SignOrigin_Checkpoint{Checkpoint: pb.Checkpoint}
 	case *eventpb.SignOrigin_Sb:
@@ -968,12 +1189,12 @@ func SignOrigin_TypeFromPb(pb eventpb.SignOrigin_Type) SignOrigin_Type {
 }
 
 type SignOrigin_ContextStore struct {
-	ContextStore *types8.Origin
+	ContextStore *types10.Origin
 }
 
 func (*SignOrigin_ContextStore) isSignOrigin_Type() {}
 
-func (w *SignOrigin_ContextStore) Unwrap() *types8.Origin {
+func (w *SignOrigin_ContextStore) Unwrap() *types10.Origin {
 	return w.ContextStore
 }
 
@@ -986,12 +1207,12 @@ func (*SignOrigin_ContextStore) MirReflect() mirreflect.Type {
 }
 
 type SignOrigin_Dsl struct {
-	Dsl *types9.Origin
+	Dsl *types11.Origin
 }
 
 func (*SignOrigin_Dsl) isSignOrigin_Type() {}
 
-func (w *SignOrigin_Dsl) Unwrap() *types9.Origin {
+func (w *SignOrigin_Dsl) Unwrap() *types11.Origin {
 	return w.Dsl
 }
 
@@ -1086,12 +1307,12 @@ type VerifyNodeSigs struct {
 
 func VerifyNodeSigsFromPb(pb *eventpb.VerifyNodeSigs) *VerifyNodeSigs {
 	return &VerifyNodeSigs{
-		Data: types7.ConvertSlice(pb.Data, func(t *eventpb.SigVerData) *SigVerData {
+		Data: types9.ConvertSlice(pb.Data, func(t *eventpb.SigVerData) *SigVerData {
 			return SigVerDataFromPb(t)
 		}),
 		Signatures: pb.Signatures,
 		Origin:     SigVerOriginFromPb(pb.Origin),
-		NodeIds: types7.ConvertSlice(pb.NodeIds, func(t string) types.NodeID {
+		NodeIds: types9.ConvertSlice(pb.NodeIds, func(t string) types.NodeID {
 			return (types.NodeID)(t)
 		}),
 	}
@@ -1099,12 +1320,12 @@ func VerifyNodeSigsFromPb(pb *eventpb.VerifyNodeSigs) *VerifyNodeSigs {
 
 func (m *VerifyNodeSigs) Pb() *eventpb.VerifyNodeSigs {
 	return &eventpb.VerifyNodeSigs{
-		Data: types7.ConvertSlice(m.Data, func(t *SigVerData) *eventpb.SigVerData {
+		Data: types9.ConvertSlice(m.Data, func(t *SigVerData) *eventpb.SigVerData {
 			return (t).Pb()
 		}),
 		Signatures: m.Signatures,
 		Origin:     (m.Origin).Pb(),
-		NodeIds: types7.ConvertSlice(m.NodeIds, func(t types.NodeID) string {
+		NodeIds: types9.ConvertSlice(m.NodeIds, func(t types.NodeID) string {
 			return (string)(t)
 		}),
 	}
@@ -1125,12 +1346,12 @@ type NodeSigsVerified struct {
 func NodeSigsVerifiedFromPb(pb *eventpb.NodeSigsVerified) *NodeSigsVerified {
 	return &NodeSigsVerified{
 		Origin: SigVerOriginFromPb(pb.Origin),
-		NodeIds: types7.ConvertSlice(pb.NodeIds, func(t string) types.NodeID {
+		NodeIds: types9.ConvertSlice(pb.NodeIds, func(t string) types.NodeID {
 			return (types.NodeID)(t)
 		}),
 		Valid: pb.Valid,
-		Errors: types7.ConvertSlice(pb.Errors, func(t string) error {
-			return types7.StringToError(t)
+		Errors: types9.ConvertSlice(pb.Errors, func(t string) error {
+			return types9.StringToError(t)
 		}),
 		AllOk: pb.AllOk,
 	}
@@ -1139,12 +1360,12 @@ func NodeSigsVerifiedFromPb(pb *eventpb.NodeSigsVerified) *NodeSigsVerified {
 func (m *NodeSigsVerified) Pb() *eventpb.NodeSigsVerified {
 	return &eventpb.NodeSigsVerified{
 		Origin: (m.Origin).Pb(),
-		NodeIds: types7.ConvertSlice(m.NodeIds, func(t types.NodeID) string {
+		NodeIds: types9.ConvertSlice(m.NodeIds, func(t types.NodeID) string {
 			return (string)(t)
 		}),
 		Valid: m.Valid,
-		Errors: types7.ConvertSlice(m.Errors, func(t error) string {
-			return types7.ErrorToString(t)
+		Errors: types9.ConvertSlice(m.Errors, func(t error) string {
+			return types9.ErrorToString(t)
 		}),
 		AllOk: m.AllOk,
 	}
@@ -1173,11 +1394,11 @@ type SigVerOrigin_TypeWrapper[T any] interface {
 func SigVerOrigin_TypeFromPb(pb eventpb.SigVerOrigin_Type) SigVerOrigin_Type {
 	switch pb := pb.(type) {
 	case *eventpb.SigVerOrigin_ContextStore:
-		return &SigVerOrigin_ContextStore{ContextStore: types8.OriginFromPb(pb.ContextStore)}
+		return &SigVerOrigin_ContextStore{ContextStore: types10.OriginFromPb(pb.ContextStore)}
 	case *eventpb.SigVerOrigin_Iss:
 		return &SigVerOrigin_Iss{Iss: pb.Iss}
 	case *eventpb.SigVerOrigin_Dsl:
-		return &SigVerOrigin_Dsl{Dsl: types9.OriginFromPb(pb.Dsl)}
+		return &SigVerOrigin_Dsl{Dsl: types11.OriginFromPb(pb.Dsl)}
 	case *eventpb.SigVerOrigin_Checkpoint:
 		return &SigVerOrigin_Checkpoint{Checkpoint: pb.Checkpoint}
 	case *eventpb.SigVerOrigin_Sb:
@@ -1187,12 +1408,12 @@ func SigVerOrigin_TypeFromPb(pb eventpb.SigVerOrigin_Type) SigVerOrigin_Type {
 }
 
 type SigVerOrigin_ContextStore struct {
-	ContextStore *types8.Origin
+	ContextStore *types10.Origin
 }
 
 func (*SigVerOrigin_ContextStore) isSigVerOrigin_Type() {}
 
-func (w *SigVerOrigin_ContextStore) Unwrap() *types8.Origin {
+func (w *SigVerOrigin_ContextStore) Unwrap() *types10.Origin {
 	return w.ContextStore
 }
 
@@ -1223,12 +1444,12 @@ func (*SigVerOrigin_Iss) MirReflect() mirreflect.Type {
 }
 
 type SigVerOrigin_Dsl struct {
-	Dsl *types9.Origin
+	Dsl *types11.Origin
 }
 
 func (*SigVerOrigin_Dsl) isSigVerOrigin_Type() {}
 
-func (w *SigVerOrigin_Dsl) Unwrap() *types9.Origin {
+func (w *SigVerOrigin_Dsl) Unwrap() *types11.Origin {
 	return w.Dsl
 }
 
@@ -1295,14 +1516,14 @@ func (*SigVerOrigin) MirReflect() mirreflect.Type {
 }
 
 type SendMessage struct {
-	Msg          *types10.Message
+	Msg          *types12.Message
 	Destinations []types.NodeID
 }
 
 func SendMessageFromPb(pb *eventpb.SendMessage) *SendMessage {
 	return &SendMessage{
-		Msg: types10.MessageFromPb(pb.Msg),
-		Destinations: types7.ConvertSlice(pb.Destinations, func(t string) types.NodeID {
+		Msg: types12.MessageFromPb(pb.Msg),
+		Destinations: types9.ConvertSlice(pb.Destinations, func(t string) types.NodeID {
 			return (types.NodeID)(t)
 		}),
 	}
@@ -1311,7 +1532,7 @@ func SendMessageFromPb(pb *eventpb.SendMessage) *SendMessage {
 func (m *SendMessage) Pb() *eventpb.SendMessage {
 	return &eventpb.SendMessage{
 		Msg: (m.Msg).Pb(),
-		Destinations: types7.ConvertSlice(m.Destinations, func(t types.NodeID) string {
+		Destinations: types9.ConvertSlice(m.Destinations, func(t types.NodeID) string {
 			return (string)(t)
 		}),
 	}
@@ -1323,13 +1544,13 @@ func (*SendMessage) MirReflect() mirreflect.Type {
 
 type MessageReceived struct {
 	From types.NodeID
-	Msg  *types10.Message
+	Msg  *types12.Message
 }
 
 func MessageReceivedFromPb(pb *eventpb.MessageReceived) *MessageReceived {
 	return &MessageReceived{
 		From: (types.NodeID)(pb.From),
-		Msg:  types10.MessageFromPb(pb.Msg),
+		Msg:  types12.MessageFromPb(pb.Msg),
 	}
 }
 

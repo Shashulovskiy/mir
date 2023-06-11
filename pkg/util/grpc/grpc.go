@@ -14,3 +14,11 @@ func NewDummyMultiaddr(port int) multiaddr.Multiaddr {
 	}
 	return a
 }
+
+func NewMultiaddr(host string, port int) multiaddr.Multiaddr {
+	a, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", host, port))
+	if err != nil {
+		panic(err)
+	}
+	return a
+}

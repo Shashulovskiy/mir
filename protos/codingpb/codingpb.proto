@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package codingpb;
+
+option go_package = "github.com/filecoin-project/mir/pkg/pb/codingpb";
+
+import "mir/codegen_extensions.proto";
+import "net/codegen_extensions.proto";
+
+import "dslpb/dslpb.proto";
+import "contextstorepb/contextstorepb.proto";
+import "requestpb/requestpb.proto";
+
+// ============================================================
+// Events
+// ============================================================
+
+message Event {
+  option (mir.event_class) = true;
+
+  oneof type {
+    option (mir.event_type) = true;
+
+    EncodeRequest encodeRequest = 1;
+    EncodeResult encodeResult = 2;
+
+    DecodeRequest decodeRequest = 3;
+    DecodeResult decodeResult = 4;
+
+    RebuildRequest rebuildRequest = 5;
+    RebuildResult rebuildResult = 6;
+  }
+}
+
+message EncodeOrigin {
+  string module = 1 [(mir.type) = "github.com/filecoin-project/mir/pkg/types.ModuleID"];
+  oneof type {
+    contextstorepb.Origin   context_store = 2;
+    requestpb.Request       request = 3;
+    dslpb.Origin            dsl = 4;
+  }
+}
+
+message EncodeRequest {
+  option (mir.event) = true;
+
+  int64 totalShards = 1;
+  int64 dataShards  = 2;
+  bytes paddedData  = 3;
+  EncodeOrigin origin = 4;
+}
+
+message EncodeResult {
+  option (mir.event) = true;
+
+  repeated bytes encoded = 1;
+  EncodeOrigin origin = 2;
+}
+
+message DecodeOrigin {
+  string module = 1 [(mir.type) = "github.com/filecoin-project/mir/pkg/types.ModuleID"];
+  oneof type {
+    contextstorepb.Origin   context_store = 2;
+    requestpb.Request       request = 3;
+    dslpb.Origin            dsl = 4;
+  }
+}
+
+message DecodeRequest {
+  option (mir.event) = true;
+
+  int64 totalShards     = 1;
+  int64 dataShards      = 2;
+  repeated Share shares = 3;
+  DecodeOrigin origin = 4;
+}
+
+message Share {
+  int64 number = 1;
+  bytes chunk  = 2;
+}
+
+message DecodeResult {
+  option (mir.event) = true;
+
+  bool  success = 1;
+  bytes decoded = 2;
+  DecodeOrigin origin = 3;
+}
+
+message RebuildOrigin {
+  string module = 1 [(mir.type) = "github.com/filecoin-project/mir/pkg/types.ModuleID"];
+  oneof type {
+    contextstorepb.Origin   context_store = 2;
+    requestpb.Request       request = 3;
+    dslpb.Origin            dsl = 4;
+  }
+}
+
+message RebuildRequest {
+  option (mir.event) = true;
+
+  int64 totalShards     = 1;
+  int64 dataShards      = 2;
+  repeated Share shares = 3;
+  RebuildOrigin origin = 4;
+}
+
+message RebuildResult {
+  option (mir.event) = true;
+
+  bool  success = 1;
+  bytes decoded = 2;
+  RebuildOrigin origin = 3;
+}

@@ -12,5 +12,8 @@ func (*Message) ReflectTypeOptions() []reflect.Type {
 		reflect.TypeOf((*Message_Pingpong)(nil)),
 		reflect.TypeOf((*Message_Checkpoint)(nil)),
 		reflect.TypeOf((*Message_SbMessage)(nil)),
+		reflect.TypeOf((*Message_Brb)(nil)),
+		reflect.TypeOf((*Message_Brbdxr)(nil)),
+		reflect.TypeOf((*Message_Brbct)(nil)),
 	}
 }

@@ -4,23 +4,25 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/filecoin-project/mir/pkg/pb/brbpb"
 	"os"
 
 	"github.com/filecoin-project/mir/pkg/events"
 	"github.com/filecoin-project/mir/pkg/modules"
-	"github.com/filecoin-project/mir/pkg/pb/bcbpb"
 	"github.com/filecoin-project/mir/pkg/pb/eventpb"
 )
 
 type controlModule struct {
 	eventsOut chan *events.EventList
 	isLeader  bool
+	lastId    int
 }
 
 func newControlModule(isLeader bool) modules.ActiveModule {
 	return &controlModule{
 		eventsOut: make(chan *events.EventList),
 		isLeader:  isLeader,
+		lastId:    1,
 	}
 }
 
@@ -43,16 +45,20 @@ func (m *controlModule) ApplyEvents(ctx context.Context, events *events.EventLis
 				fmt.Println("Waiting for the message...")
 			}
 
-		case *eventpb.Event_Bcb:
-			bcbEvent := event.Type.(*eventpb.Event_Bcb).Bcb
-			switch bcbEvent.Type.(type) {
+		case *eventpb.Event_Brb:
+			brbEvent := event.Type.(*eventpb.Event_Brb).Brb
+			switch brbEvent.Type.(type) {
 
-			case *bcbpb.Event_Deliver:
-				deliverEvent := bcbEvent.Type.(*bcbpb.Event_Deliver).Deliver
+			case *brbpb.Event_Deliver:
+				deliverEvent := brbEvent.Type.(*brbpb.Event_Deliver).Deliver
 				fmt.Println("Leader says: ", string(deliverEvent.Data))
+				m.lastId += 1
+				if m.isLeader {
+					m.readMessageFromConsole()
+				}
 
 			default:
-				return fmt.Errorf("unknown bcb event type: %T", bcbEvent.Type)
+				return fmt.Errorf("unknown brb event type: %T", brbEvent.Type)
 			}
 
 		default:
@@ -78,11 +84,12 @@ func (m *controlModule) readMessageFromConsole() error {
 	}
 
 	m.eventsOut <- events.ListOf(&eventpb.Event{
-		DestModule: "bcb",
-		Type: &eventpb.Event_Bcb{
-			Bcb: &bcbpb.Event{
-				Type: &bcbpb.Event_Request{
-					Request: &bcbpb.BroadcastRequest{
+		DestModule: "brbdxr",
+		Type: &eventpb.Event_Brb{
+			Brb: &brbpb.Event{
+				Type: &brbpb.Event_Request{
+					Request: &brbpb.BroadcastRequest{
+						Id:   int64(m.lastId),
 						Data: []byte(scanner.Text()),
 					},
 				},

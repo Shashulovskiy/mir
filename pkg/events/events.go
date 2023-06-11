@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package events
 
 import (
+	"github.com/filecoin-project/mir/pkg/pb/codingpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/filecoin-project/mir/pkg/pb/availabilitypb"
@@ -150,6 +151,64 @@ func HashRequest(destModule t.ModuleID, data [][][]byte, origin *eventpb.HashOri
 	}
 }
 
+func MerkleProofVerifyRequest(destModule t.ModuleID, rootHash, chunk []byte, proof *commonpb.MerklePath, origin *eventpb.MerkleProofVerifyOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_MerkleVerifyRequest{MerkleVerifyRequest: &eventpb.MerkleVerifyRequest{
+			RootHash: rootHash,
+			Chunk:    chunk,
+			Proof:    proof,
+			Origin:   origin,
+		}},
+	}
+}
+
+func EncodeRequest(destModule t.ModuleID, totalShards, dataShards int64, paddedData []byte, origin *codingpb.EncodeOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_EncodeRequest{EncodeRequest: &codingpb.EncodeRequest{
+			TotalShards: totalShards,
+			DataShards:  dataShards,
+			PaddedData:  paddedData,
+			Origin:      origin,
+		}},
+	}
+}
+
+func DecodeRequest(destModule t.ModuleID, totalShards, dataShards int64, shares []*codingpb.Share, origin *codingpb.DecodeOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_DecodeRequest{DecodeRequest: &codingpb.DecodeRequest{
+			TotalShards: totalShards,
+			DataShards:  dataShards,
+			Shares:      shares,
+			Origin:      origin,
+		}},
+	}
+}
+
+func RebuildRequest(destModule t.ModuleID, totalShards, dataShards int64, shares []*codingpb.Share, origin *codingpb.RebuildOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_RebuildRequest{RebuildRequest: &codingpb.RebuildRequest{
+			TotalShards: totalShards,
+			DataShards:  dataShards,
+			Shares:      shares,
+			Origin:      origin,
+		}},
+	}
+}
+
+func MerkleBuildRequest(destModule t.ModuleID, messages [][]byte, origin *eventpb.MerkleBuildOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_MerkleBuildRequest{MerkleBuildRequest: &eventpb.MerkleBuildRequest{
+			Messages: messages,
+			Origin:   origin,
+		}},
+	}
+}
+
 // HashResult returns an event representing the computation of hashes by the hashing module.
 // It contains the computed digests and the HashOrigin,
 // an object used to maintain the context for the requesting module,
@@ -159,6 +218,67 @@ func HashResult(destModule t.ModuleID, digests [][]byte, origin *eventpb.HashOri
 		Digests: digests,
 		Origin:  origin,
 	}}}
+}
+
+func MerkleProofVerifyResult(destModule t.ModuleID, result bool, origin *eventpb.MerkleProofVerifyOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_MerkleVerifyResult{MerkleVerifyResult: &eventpb.MerkleVerifyResult{
+			Result: result,
+			Origin: origin,
+		}},
+	}
+}
+
+func MerkleBuildResult(destModule t.ModuleID, rootHash []byte, proofs []*commonpb.MerklePath, origin *eventpb.MerkleBuildOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_MerkleBuildResult{
+			MerkleBuildResult: &eventpb.MerkleBuildResult{
+				RootHash: rootHash,
+				Proofs:   proofs,
+				Origin:   origin,
+			},
+		},
+	}
+}
+
+func EncodeResult(destModule t.ModuleID, encoded [][]byte, origin *codingpb.EncodeOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_EncodeResult{
+			EncodeResult: &codingpb.EncodeResult{
+				Encoded: encoded,
+				Origin:  origin,
+			},
+		},
+	}
+}
+
+func DecodeResult(destModule t.ModuleID, success bool, decoded []byte, origin *codingpb.DecodeOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_DecodeResult{
+			DecodeResult: &codingpb.DecodeResult{
+				Success: success,
+				Decoded: decoded,
+				Origin:  origin,
+			},
+		},
+	}
+}
+
+func RebuildResult(destModule t.ModuleID, success bool, decoded []byte, origin *codingpb.RebuildOrigin) *eventpb.Event {
+	return &eventpb.Event{
+		DestModule: destModule.Pb(),
+		Type: &eventpb.Event_RebuildResult{
+			RebuildResult: &codingpb.RebuildResult{
+				Success: success,
+				Decoded: decoded,
+				Origin:  origin,
+			},
+		},
+	}
 }
 
 // SignRequest returns an event representing a request to the crypto module for computing the signature over data.

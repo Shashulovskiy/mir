@@ -10,6 +10,9 @@ package messagepb;
 
 import "isspb/isspb.proto";
 import "bcbpb/bcbpb.proto";
+import "brbpb/brbpb.proto";
+import "brbdxrpb/brbdxrpb.proto";
+import "brbctpb/brbctpb.proto";
 import "availabilitypb/mscpb/mscpb.proto";
 import "pingpongpb/pingpongpb.proto";
 import "checkpointpb/checkpointpb.proto";
@@ -33,6 +36,9 @@ message Message {
     availabilitypb.mscpb.Message multisig_collector = 4;
     pingpongpb.Message           pingpong           = 5;
     checkpointpb.Message         checkpoint         = 6;
-    ordererspb.SBInstanceMessage  sb_message         = 7;
+    ordererspb.SBInstanceMessage sb_message         = 7;
+    brbpb.Message                brb                = 8;
+    brbdxrpb.Message             brbdxr             = 9;
+    brbctpb.Message              brbct              = 10;
   }
 }
